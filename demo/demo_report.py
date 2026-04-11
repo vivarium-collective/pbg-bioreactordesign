@@ -1,8 +1,8 @@
 """Demo: BiRD multi-configuration bioreactor report.
 
-Runs three distinct bioreactor simulations (E. coli bubble column, CHO
-stirred tank, yeast airlift), generates interactive 3D reactor geometry
-viewers with Three.js, Plotly time-series charts, colored bigraph-viz
+Runs three E. coli fermentation scenarios at different scales and
+aeration strategies, generates interactive 3D reactor geometry viewers
+with Three.js, Plotly time-series charts, colored bigraph-viz
 architecture diagrams, and navigatable PBG document trees — all in a
 single self-contained HTML report.
 """
@@ -26,29 +26,29 @@ from pbg_bioreactordesign.composites import make_reactor_document
 
 CONFIGS = [
     {
-        'id': 'ecoli',
-        'title': 'E. coli Aerobic Fermentation',
-        'subtitle': '20 L bubble column — high growth, O\u2082 demand',
+        'id': 'ecoli_lab',
+        'title': 'E. coli Lab-Scale Batch',
+        'subtitle': '2 L bubble column — exponential growth, O\u2082 crash',
         'description': (
-            'A lab-scale bubble column (20 L) cultivating E. coli at 37\u00b0C '
-            'with vigorous aeration. The fast-growing culture (μ_max = 0.7 h\u207b\u00b9) '
-            'rapidly consumes dissolved oxygen, driving kLa-limited mass transfer. '
-            'As biomass accumulates, the oxygen uptake rate exceeds the transfer '
-            'capacity, creating a classic O\u2082-limited fermentation profile. '
-            'CO\u2082 accumulates from respiration.'
+            'A benchtop bubble column (2 L) growing E. coli K-12 at 37\u00b0C in '
+            'minimal medium. With moderate aeration (0.5 vvm), the culture '
+            'initially enjoys excess dissolved oxygen. As biomass doubles every '
+            '~60 min (μ_max = 0.7 h\u207b\u00b9), the oxygen uptake rate overtakes the '
+            'mass transfer capacity, causing a characteristic DO crash. This is '
+            'the classic aerobic E. coli batch profile seen in teaching labs.'
         ),
         'config': {
             'reactor_type': 'bubble_column',
-            'volume_L': 20.0,
-            'diameter_m': 0.2,
-            'liquid_height_m': 0.5,
-            'gas_flow_rate_Lpm': 2.0,
+            'volume_L': 2.0,
+            'diameter_m': 0.1,
+            'liquid_height_m': 0.25,
+            'gas_flow_rate_Lpm': 1.0,
             'temperature_K': 310.15,
             'pressure_atm': 1.0,
-            'mean_bubble_diameter_mm': 3.0,
-            'initial_biomass_gL': 0.3,
+            'mean_bubble_diameter_mm': 2.5,
+            'initial_biomass_gL': 0.05,
             'initial_do_mgL': 7.0,
-            'initial_dco2_mgL': 0.5,
+            'initial_dco2_mgL': 0.4,
             'max_growth_rate_per_h': 0.7,
             'ks_oxygen_mgL': 0.1,
             'yield_biomass_o2': 0.8,
@@ -56,58 +56,58 @@ CONFIGS = [
             'respiratory_quotient': 1.0,
         },
         'n_snapshots': 30,
-        'total_time': 12.0,
+        'total_time': 10.0,
         'color_scheme': 'indigo',
         'reactor_color': '#6366f1',
     },
     {
-        'id': 'cho',
-        'title': 'CHO Cell Bioproduction',
-        'subtitle': '250 L stirred tank — slow growth, controlled O\u2082',
+        'id': 'ecoli_str',
+        'title': 'E. coli High-Cell-Density (Stirred Tank)',
+        'subtitle': '50 L stirred tank — high OD, impeller-enhanced kLa',
         'description': (
-            'A pilot-scale stirred-tank bioreactor (250 L) for CHO cell culture '
-            'at 37\u00b0C. These mammalian cells grow slowly (μ_max = 0.04 h\u207b\u00b9) '
-            'but require precise dissolved oxygen control for protein production. '
-            'The impeller provides additional mixing, supplementing gas sparging. '
-            'Over 7 days, biomass increases steadily while DO is maintained '
-            'near saturation by the high kLa from combined sparging and agitation.'
+            'A 50 L stirred-tank bioreactor growing E. coli BL21 for recombinant '
+            'protein production at 37\u00b0C. The Rushton impeller (200 W) dramatically '
+            'improves kLa, enabling much higher biomass than a bubble column alone. '
+            'Starting from a higher inoculum (OD\u2248 1), the culture reaches high '
+            'cell density while the combined agitation + sparging maintains '
+            'dissolved oxygen above the critical threshold for aerobic metabolism.'
         ),
         'config': {
             'reactor_type': 'stirred_tank',
-            'volume_L': 250.0,
-            'diameter_m': 0.6,
-            'liquid_height_m': 0.9,
-            'gas_flow_rate_Lpm': 1.5,
+            'volume_L': 50.0,
+            'diameter_m': 0.35,
+            'liquid_height_m': 0.55,
+            'gas_flow_rate_Lpm': 5.0,
             'temperature_K': 310.15,
             'pressure_atm': 1.0,
-            'mean_bubble_diameter_mm': 2.5,
-            'initial_biomass_gL': 0.2,
+            'mean_bubble_diameter_mm': 2.0,
+            'initial_biomass_gL': 0.5,
             'initial_do_mgL': 7.0,
             'initial_dco2_mgL': 0.5,
-            'max_growth_rate_per_h': 0.04,
-            'ks_oxygen_mgL': 0.5,
-            'yield_biomass_o2': 2.0,
-            'maintenance_coeff_per_h': 0.005,
-            'respiratory_quotient': 0.9,
-            'impeller_power_W': 50.0,
+            'max_growth_rate_per_h': 0.65,
+            'ks_oxygen_mgL': 0.1,
+            'yield_biomass_o2': 0.9,
+            'maintenance_coeff_per_h': 0.02,
+            'respiratory_quotient': 1.0,
+            'impeller_power_W': 200.0,
         },
         'n_snapshots': 30,
-        'total_time': 168.0,
+        'total_time': 14.0,
         'color_scheme': 'emerald',
         'reactor_color': '#10b981',
     },
     {
-        'id': 'yeast',
-        'title': 'Yeast Aerobic Cultivation',
-        'subtitle': '10,000 L airlift — scale-up, mass transfer limited',
+        'id': 'ecoli_ind',
+        'title': 'E. coli Industrial Scale-Up',
+        'subtitle': '10,000 L airlift — mass transfer bottleneck at scale',
         'description': (
-            'An industrial-scale airlift reactor (10,000 L) cultivating '
-            'Saccharomyces cerevisiae at 30\u00b0C. Despite high absolute gas flow '
-            '(50 L/min), the large volume results in low superficial gas velocity '
-            'and limited mass transfer. The yeast\u2019s moderate growth rate '
-            '(μ_max = 0.35 h\u207b\u00b9) and high O\u2082 demand per biomass quickly '
-            'deplete dissolved oxygen, demonstrating the classic scale-up '
-            'challenge where kLa fails to meet biological demand.'
+            'An industrial airlift reactor (10,000 L) scaling up E. coli '
+            'fermentation at 37\u00b0C. Despite 50 L/min of air, the large vessel '
+            'diameter yields low superficial gas velocity and poor kLa. The '
+            'culture quickly becomes oxygen-limited, demonstrating the classic '
+            'scale-up problem: mass transfer that was adequate at bench scale '
+            'becomes the bottleneck at production scale. Growth rate collapses '
+            'as DO drops below the critical concentration.'
         ),
         'config': {
             'reactor_type': 'airlift',
@@ -115,20 +115,20 @@ CONFIGS = [
             'diameter_m': 1.8,
             'liquid_height_m': 4.0,
             'gas_flow_rate_Lpm': 50.0,
-            'temperature_K': 303.15,
+            'temperature_K': 310.15,
             'pressure_atm': 1.0,
             'mean_bubble_diameter_mm': 4.0,
-            'initial_biomass_gL': 1.0,
-            'initial_do_mgL': 7.5,
+            'initial_biomass_gL': 0.5,
+            'initial_do_mgL': 7.0,
             'initial_dco2_mgL': 0.5,
-            'max_growth_rate_per_h': 0.35,
-            'ks_oxygen_mgL': 0.15,
-            'yield_biomass_o2': 0.7,
-            'maintenance_coeff_per_h': 0.015,
+            'max_growth_rate_per_h': 0.65,
+            'ks_oxygen_mgL': 0.1,
+            'yield_biomass_o2': 0.8,
+            'maintenance_coeff_per_h': 0.02,
             'respiratory_quotient': 1.05,
         },
         'n_snapshots': 30,
-        'total_time': 20.0,
+        'total_time': 16.0,
         'color_scheme': 'rose',
         'reactor_color': '#f43f5e',
     },
@@ -487,15 +487,29 @@ def generate_html(sim_results, output_path):
 
       <h3 class="subsection-title">3D Reactor Geometry</h3>
       <div class="viewer-wrap">
-        <canvas id="canvas-{sid}" class="mesh-canvas"></canvas>
-        <div class="viewer-info">
-          <strong>{len(mesh_verts)}</strong> vertices &middot; <strong>{len(mesh_faces)}</strong> faces<br>
-          Color: dissolved O\u2082 level &middot; Drag to rotate &middot; Scroll to zoom
+        <div class="viewer-row">
+          <canvas id="canvas-{sid}" class="mesh-canvas"></canvas>
+          <div class="colorbar-wrap">
+            <div class="colorbar-label">{max(do2):.1f} mg/L</div>
+            <div class="colorbar-gradient"></div>
+            <div class="colorbar-label">{min(do2):.1f} mg/L</div>
+            <div class="colorbar-title">Dissolved O\u2082</div>
+          </div>
+        </div>
+        <div class="do-readout" id="do-readout-{sid}">
+          DO = <strong>{do2[0]:.2f}</strong> mg/L &nbsp;|&nbsp;
+          Biomass = <strong>{biomass[0]:.3f}</strong> g/L
         </div>
         <div class="slider-row">
           <button class="play-btn" id="playbtn-{sid}" onclick="togglePlay('{sid}')">&#9654;</button>
           <input type="range" id="slider-{sid}" min="0" max="{len(snapshots)-1}" value="0" class="time-slider" style="accent-color:{cs['primary']}">
           <span id="tval-{sid}" class="time-val">t = 0 h</span>
+        </div>
+        <div class="viewer-info">
+          Reactor vessel colored by dissolved O\u2082 concentration.
+          <span style="color:#3b82f6">Blue = high O\u2082 (aerobic)</span> &rarr;
+          <span style="color:#ef4444">Red = low O\u2082 (O\u2082-limited)</span>.
+          Drag to rotate. Scroll to zoom.
         </div>
       </div>
 
@@ -568,7 +582,14 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 .metric-sub{{display:block;font-size:0.65rem;color:#94a3b8;}}
 .subsection-title{{font-size:1rem;font-weight:600;color:#334155;margin:2rem 0 0.8rem;}}
 .viewer-wrap{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:1rem;}}
-.mesh-canvas{{width:100%;height:400px;border-radius:8px;display:block;}}
+.viewer-row{{display:flex;gap:0.8rem;align-items:stretch;}}
+.mesh-canvas{{flex:1;height:400px;border-radius:8px;display:block;min-width:0;}}
+.colorbar-wrap{{display:flex;flex-direction:column;align-items:center;justify-content:space-between;width:50px;padding:0.5rem 0;flex-shrink:0;}}
+.colorbar-gradient{{width:18px;flex:1;margin:0.3rem 0;border-radius:4px;border:1px solid #e2e8f0;background:linear-gradient(to bottom,#3b82f6,#06b6d4,#22c55e,#eab308,#ef4444);}}
+.colorbar-label{{font-size:0.65rem;color:#64748b;font-family:'SF Mono',Menlo,monospace;text-align:center;line-height:1.2;}}
+.colorbar-title{{font-size:0.6rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;writing-mode:horizontal-tb;margin-top:0.3rem;white-space:nowrap;}}
+.do-readout{{text-align:center;font-size:0.85rem;color:#334155;padding:0.5rem 0 0.2rem;font-family:'SF Mono',Menlo,monospace;}}
+.do-readout strong{{color:#1e293b;}}
 .viewer-info{{text-align:center;font-size:0.75rem;color:#94a3b8;margin:0.5rem 0;}}
 .slider-row{{display:flex;align-items:center;gap:0.8rem;padding:0.5rem 0.5rem 0;}}
 .play-btn{{width:32px;height:32px;border-radius:50%;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}}
@@ -596,6 +617,9 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 @media(max-width:900px){{
   .charts-grid,.arch-grid{{grid-template-columns:1fr;}}
   .top-bar{{flex-wrap:wrap;padding:0.5rem 1rem;}}
+  .viewer-row{{flex-direction:column;}}
+  .colorbar-wrap{{flex-direction:row;width:100%;height:40px;}}
+  .colorbar-gradient{{width:auto;height:14px;flex:1;background:linear-gradient(to right,#3b82f6,#06b6d4,#22c55e,#eab308,#ef4444);}}
 }}
 </style>
 </head>
@@ -610,8 +634,9 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   <div class="hero">
     <h1>BioReactorDesign Simulation Report</h1>
     <p>Process-bigraph wrapper for BiRD: 0D bioreactor models with Higbie kLa,
-    Monod kinetics, and temperature-dependent Henry's law. Three reactor
-    configurations demonstrating scale-up mass transfer challenges.</p>
+    Monod kinetics, and temperature-dependent Henry's law. Three E. coli
+    fermentation scenarios — from 2 L bench to 10,000 L production —
+    demonstrating scale-up mass transfer challenges.</p>
   </div>
 
   {''.join(sections_html)}
@@ -775,11 +800,18 @@ function initViewer(sid) {{
 
   var slider = document.getElementById('slider-' + sid);
   var tval = document.getElementById('tval-' + sid);
+  var doReadout = document.getElementById('do-readout-' + sid);
 
-  slider.addEventListener('input', function() {{
-    var idx = parseInt(slider.value);
+  function updateReadout(idx) {{
     updateColor(idx);
     tval.textContent = 't = ' + d.charts.times[idx].toFixed(1) + ' h';
+    if (doReadout) {{
+      doReadout.innerHTML = 'DO = <strong>' + d.charts.dissolved_o2[idx].toFixed(2) + '</strong> mg/L &nbsp;|&nbsp; Biomass = <strong>' + d.charts.biomass[idx].toFixed(3) + '</strong> g/L';
+    }}
+  }}
+
+  slider.addEventListener('input', function() {{
+    updateReadout(parseInt(slider.value));
   }});
 
   function animate() {{
@@ -789,7 +821,7 @@ function initViewer(sid) {{
   }}
   animate();
 
-  viewers[sid] = {{slider:slider, tval:tval, updateColor:updateColor, controls:controls}};
+  viewers[sid] = {{slider:slider, tval:tval, updateColor:updateColor, updateReadout:updateReadout, controls:controls}};
   playStates[sid] = {{playing:false, interval:null}};
 }}
 
@@ -806,8 +838,7 @@ function togglePlay(sid) {{
       var idx = parseInt(v.slider.value) + 1;
       if (idx >= d.n_snapshots + 1) idx = 0;
       v.slider.value = idx;
-      v.updateColor(idx);
-      v.tval.textContent = 't = ' + d.charts.times[idx].toFixed(1) + ' h';
+      v.updateReadout(idx);
     }}, 400);
   }} else {{
     btn.innerHTML = '\\u25b6';
