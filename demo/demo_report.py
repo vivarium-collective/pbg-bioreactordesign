@@ -422,25 +422,57 @@ def generate_html(sim_results, output_path):
         cer = [s['co2_evolution_rate'] for s in snapshots]
         cstar = [s['o2_saturation'] for s in snapshots]
 
-        # JS data
+        # JS data — all variables available for 3D coloring and charts
         all_js_data[sid] = {
             'faces': mesh_faces,
             'vertices': mesh_verts,
             'n_snapshots': len(snapshots),
-            'do2_values': do2,
-            'do2_range': [min(do2), max(do2)],
             'camera': [
                 rcfg['diameter_m'] * 2.5,
                 rcfg['diameter_m'] * 1.8,
                 rcfg['liquid_height_m'] * 1.5,
             ],
             'height': rcfg['liquid_height_m'],
+            # Color variables: each has values array and [min, max] range
+            'color_vars': {
+                'dissolved_o2': {
+                    'values': do2, 'range': [min(do2), max(do2)],
+                    'label': 'Dissolved O\u2082', 'unit': 'mg/L',
+                    'high_color': 'good', # blue=high is good
+                },
+                'dissolved_co2': {
+                    'values': dco2, 'range': [min(dco2), max(dco2)],
+                    'label': 'Dissolved CO\u2082', 'unit': 'mg/L',
+                    'high_color': 'bad', # red=high is bad (accumulation)
+                },
+                'biomass': {
+                    'values': biomass, 'range': [min(biomass), max(biomass)],
+                    'label': 'Biomass', 'unit': 'g/L',
+                    'high_color': 'good',
+                },
+                'gas_holdup': {
+                    'values': [h * 100 for h in holdup],
+                    'range': [min(holdup) * 100, max(holdup) * 100],
+                    'label': 'Gas Holdup', 'unit': '%',
+                    'high_color': 'neutral',
+                },
+                'growth_rate': {
+                    'values': mu, 'range': [min(mu), max(mu)],
+                    'label': 'Growth Rate', 'unit': 'h\u207b\u00b9',
+                    'high_color': 'good',
+                },
+                'kla_o2': {
+                    'values': kla, 'range': [min(kla), max(kla)],
+                    'label': 'kLa (O\u2082)', 'unit': 'h\u207b\u00b9',
+                    'high_color': 'good',
+                },
+            },
             'charts': {
                 'times': times,
                 'dissolved_o2': do2,
                 'dissolved_co2': dco2,
                 'biomass': biomass,
-                'gas_holdup': holdup,
+                'gas_holdup': [h * 100 for h in holdup],
                 'kla_o2': kla,
                 'growth_rate': mu,
                 'o2_uptake': our,
@@ -487,28 +519,37 @@ def generate_html(sim_results, output_path):
 
       <h3 class="subsection-title">3D Reactor Geometry</h3>
       <div class="viewer-wrap">
+        <div class="var-selector-row">
+          <label class="var-label">Color by:</label>
+          <select id="varsel-{sid}" class="var-select" onchange="changeColorVar('{sid}', this.value)" style="border-color:{cs['primary']}">
+            <option value="dissolved_o2" selected>Dissolved O\u2082 (mg/L)</option>
+            <option value="dissolved_co2">Dissolved CO\u2082 (mg/L)</option>
+            <option value="biomass">Biomass (g/L)</option>
+            <option value="gas_holdup">Gas Holdup (%)</option>
+            <option value="growth_rate">Growth Rate (h\u207b\u00b9)</option>
+            <option value="kla_o2">kLa O\u2082 (h\u207b\u00b9)</option>
+          </select>
+        </div>
         <div class="viewer-row">
           <canvas id="canvas-{sid}" class="mesh-canvas"></canvas>
-          <div class="colorbar-wrap">
-            <div class="colorbar-label">{max(do2):.1f} mg/L</div>
-            <div class="colorbar-gradient"></div>
-            <div class="colorbar-label">{min(do2):.1f} mg/L</div>
-            <div class="colorbar-title">Dissolved O\u2082</div>
+          <div class="colorbar-wrap" id="cbar-{sid}">
+            <div class="colorbar-label" id="cbar-max-{sid}">{max(do2):.1f}</div>
+            <div class="colorbar-gradient" id="cbar-grad-{sid}"></div>
+            <div class="colorbar-label" id="cbar-min-{sid}">{min(do2):.1f}</div>
+            <div class="colorbar-unit" id="cbar-unit-{sid}">mg/L</div>
           </div>
         </div>
-        <div class="do-readout" id="do-readout-{sid}">
-          DO = <strong>{do2[0]:.2f}</strong> mg/L &nbsp;|&nbsp;
-          Biomass = <strong>{biomass[0]:.3f}</strong> g/L
-        </div>
+        <div class="state-readout" id="readout-{sid}"></div>
         <div class="slider-row">
           <button class="play-btn" id="playbtn-{sid}" onclick="togglePlay('{sid}')">&#9654;</button>
           <input type="range" id="slider-{sid}" min="0" max="{len(snapshots)-1}" value="0" class="time-slider" style="accent-color:{cs['primary']}">
           <span id="tval-{sid}" class="time-val">t = 0 h</span>
         </div>
         <div class="viewer-info">
-          Reactor vessel colored by dissolved O\u2082 concentration.
-          <span style="color:#3b82f6">Blue = high O\u2082 (aerobic)</span> &rarr;
-          <span style="color:#ef4444">Red = low O\u2082 (O\u2082-limited)</span>.
+          Reactor vessel colored by selected variable.
+          <span style="color:#3b82f6">Blue = high</span> &rarr;
+          <span style="color:#ef4444">Red = low</span>
+          (inverted for CO\u2082: red = high accumulation).
           Drag to rotate. Scroll to zoom.
         </div>
       </div>
@@ -516,9 +557,11 @@ def generate_html(sim_results, output_path):
       <h3 class="subsection-title">Time-Series Dynamics</h3>
       <div class="charts-grid">
         <div id="chart-do2-{sid}" class="chart-box"></div>
+        <div id="chart-co2-{sid}" class="chart-box"></div>
         <div id="chart-biomass-{sid}" class="chart-box"></div>
         <div id="chart-kla-{sid}" class="chart-box"></div>
         <div id="chart-rates-{sid}" class="chart-box"></div>
+        <div id="chart-holdup-{sid}" class="chart-box"></div>
       </div>
 
       <h3 class="subsection-title">Architecture &amp; Document</h3>
@@ -587,9 +630,15 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 .colorbar-wrap{{display:flex;flex-direction:column;align-items:center;justify-content:space-between;width:50px;padding:0.5rem 0;flex-shrink:0;}}
 .colorbar-gradient{{width:18px;flex:1;margin:0.3rem 0;border-radius:4px;border:1px solid #e2e8f0;background:linear-gradient(to bottom,#3b82f6,#06b6d4,#22c55e,#eab308,#ef4444);}}
 .colorbar-label{{font-size:0.65rem;color:#64748b;font-family:'SF Mono',Menlo,monospace;text-align:center;line-height:1.2;}}
-.colorbar-title{{font-size:0.6rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;writing-mode:horizontal-tb;margin-top:0.3rem;white-space:nowrap;}}
-.do-readout{{text-align:center;font-size:0.85rem;color:#334155;padding:0.5rem 0 0.2rem;font-family:'SF Mono',Menlo,monospace;}}
-.do-readout strong{{color:#1e293b;}}
+.var-selector-row{{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;}}
+.var-label{{font-size:0.8rem;color:#64748b;font-weight:500;}}
+.var-select{{font-size:0.8rem;padding:0.3rem 0.6rem;border-radius:6px;border:1.5px solid #cbd5e1;background:#fff;color:#334155;cursor:pointer;font-family:inherit;}}
+.var-select:focus{{outline:none;border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,0.15);}}
+.state-readout{{display:flex;flex-wrap:wrap;justify-content:center;gap:0.5rem 1.2rem;font-size:0.78rem;color:#475569;padding:0.5rem 0 0.2rem;font-family:'SF Mono',Menlo,monospace;}}
+.state-readout .rv{{white-space:nowrap;}}
+.state-readout .rv-label{{color:#94a3b8;}}
+.state-readout .rv-val{{font-weight:600;color:#1e293b;}}
+.colorbar-unit{{font-size:0.6rem;color:#94a3b8;margin-top:0.2rem;white-space:nowrap;}}
 .viewer-info{{text-align:center;font-size:0.75rem;color:#94a3b8;margin:0.5rem 0;}}
 .slider-row{{display:flex;align-items:center;gap:0.8rem;padding:0.5rem 0.5rem 0;}}
 .play-btn{{width:32px;height:32px;border-radius:50%;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}}
@@ -597,6 +646,7 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 .time-slider{{flex:1;height:4px;cursor:pointer;}}
 .time-val{{font-size:0.8rem;color:#64748b;font-family:'SF Mono',Menlo,monospace;min-width:80px;text-align:right;}}
 .charts-grid{{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}}
+.charts-grid .chart-box{{min-height:260px;}}
 .chart-box{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:0.5rem;min-height:280px;}}
 .arch-grid{{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}}
 .bigraph-card,.json-card{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:1.2rem;}}
@@ -702,10 +752,8 @@ function toggleJt(el, id) {{
 var viewers = {{}};
 var playStates = {{}};
 
-function colorForDO(val, vmin, vmax) {{
-  // Blue (high O2) -> Cyan -> Green -> Yellow -> Red (low O2)
-  // Inverted: low O2 = red (danger), high O2 = blue (good)
-  var t = 1.0 - Math.max(0, Math.min(1, (val - vmin) / (vmax - vmin + 1e-12)));
+function colormap(t) {{
+  // Blue -> Cyan -> Green -> Yellow -> Red (t=0 is blue, t=1 is red)
   var r, g, b;
   if (t < 0.25) {{
     var s = t / 0.25;
@@ -721,6 +769,17 @@ function colorForDO(val, vmin, vmax) {{
     r = 0.90 + 0.10*s; g = 0.75 - 0.55*s; b = 0.10 - 0.05*s;
   }}
   return [r, g, b];
+}}
+
+// Track which variable is selected for coloring per simulation
+var activeColorVar = {{}};
+
+function getColor(val, vmin, vmax, invert) {{
+  // invert=true: high value = blue (good), low = red
+  // invert=false: high value = red (bad), low = blue
+  var t = Math.max(0, Math.min(1, (val - vmin) / (vmax - vmin + 1e-12)));
+  if (invert) t = 1.0 - t;
+  return colormap(t);
 }}
 
 function initViewer(sid) {{
@@ -784,10 +843,14 @@ function initViewer(sid) {{
   }});
   scene.add(new THREE.Mesh(geometry, wireMat));
 
+  activeColorVar[sid] = 'dissolved_o2';
+
   function updateColor(snapIdx) {{
-    var doVal = d.do2_values[snapIdx];
-    var vmin = d.do2_range[0], vmax = d.do2_range[1];
-    var c = colorForDO(doVal, vmin, vmax);
+    var varKey = activeColorVar[sid];
+    var cv = d.color_vars[varKey];
+    var val = cv.values[snapIdx];
+    var invert = (cv.high_color === 'good');
+    var c = getColor(val, cv.range[0], cv.range[1], invert);
     for (var i = 0; i < nv; i++) {{
       colors[i*3]   = c[0];
       colors[i*3+1] = c[1];
@@ -800,15 +863,30 @@ function initViewer(sid) {{
 
   var slider = document.getElementById('slider-' + sid);
   var tval = document.getElementById('tval-' + sid);
-  var doReadout = document.getElementById('do-readout-' + sid);
+  var readout = document.getElementById('readout-' + sid);
+
+  function fmtVal(v) {{
+    if (Math.abs(v) >= 100) return v.toFixed(1);
+    if (Math.abs(v) >= 1) return v.toFixed(2);
+    if (Math.abs(v) >= 0.01) return v.toFixed(3);
+    return v.toExponential(2);
+  }}
 
   function updateReadout(idx) {{
     updateColor(idx);
     tval.textContent = 't = ' + d.charts.times[idx].toFixed(1) + ' h';
-    if (doReadout) {{
-      doReadout.innerHTML = 'DO = <strong>' + d.charts.dissolved_o2[idx].toFixed(2) + '</strong> mg/L &nbsp;|&nbsp; Biomass = <strong>' + d.charts.biomass[idx].toFixed(3) + '</strong> g/L';
+    if (readout) {{
+      var c = d.charts;
+      readout.innerHTML =
+        '<span class="rv"><span class="rv-label">DO </span><span class="rv-val">' + fmtVal(c.dissolved_o2[idx]) + '</span> mg/L</span>' +
+        '<span class="rv"><span class="rv-label">CO\u2082 </span><span class="rv-val">' + fmtVal(c.dissolved_co2[idx]) + '</span> mg/L</span>' +
+        '<span class="rv"><span class="rv-label">Biomass </span><span class="rv-val">' + fmtVal(c.biomass[idx]) + '</span> g/L</span>' +
+        '<span class="rv"><span class="rv-label">\u03bc </span><span class="rv-val">' + fmtVal(c.growth_rate[idx]) + '</span> h\u207b\u00b9</span>' +
+        '<span class="rv"><span class="rv-label">kLa </span><span class="rv-val">' + fmtVal(c.kla_o2[idx]) + '</span> h\u207b\u00b9</span>' +
+        '<span class="rv"><span class="rv-label">Gas </span><span class="rv-val">' + fmtVal(c.gas_holdup[idx]) + '</span>%</span>';
     }}
   }}
+  updateReadout(0);
 
   slider.addEventListener('input', function() {{
     updateReadout(parseInt(slider.value));
@@ -823,6 +901,27 @@ function initViewer(sid) {{
 
   viewers[sid] = {{slider:slider, tval:tval, updateColor:updateColor, updateReadout:updateReadout, controls:controls}};
   playStates[sid] = {{playing:false, interval:null}};
+}}
+
+function changeColorVar(sid, varKey) {{
+  var d = DATA[sid];
+  var cv = d.color_vars[varKey];
+  activeColorVar[sid] = varKey;
+  // Update color bar labels
+  var invert = (cv.high_color === 'good');
+  document.getElementById('cbar-max-' + sid).textContent = (invert ? cv.range[1] : cv.range[0]).toFixed(2);
+  document.getElementById('cbar-min-' + sid).textContent = (invert ? cv.range[0] : cv.range[1]).toFixed(2);
+  document.getElementById('cbar-unit-' + sid).textContent = cv.unit;
+  // Update gradient direction: for 'good' vars, blue on top (high=good)
+  var grad = document.getElementById('cbar-grad-' + sid);
+  if (invert) {{
+    grad.style.background = 'linear-gradient(to bottom,#3b82f6,#06b6d4,#22c55e,#eab308,#ef4444)';
+  }} else {{
+    grad.style.background = 'linear-gradient(to bottom,#ef4444,#eab308,#22c55e,#06b6d4,#3b82f6)';
+  }}
+  // Re-color at current slider position
+  var idx = parseInt(viewers[sid].slider.value);
+  viewers[sid].updateColor(idx);
 }}
 
 function togglePlay(sid) {{
@@ -872,7 +971,18 @@ function initCharts(sid) {{
     showlegend:true
   }}), pCfg);
 
-  // Chart 2: Biomass
+  // Chart 2: Dissolved CO2
+  Plotly.newPlot('chart-co2-'+sid, [
+    {{x:c.times, y:c.dissolved_co2, type:'scatter', mode:'lines+markers',
+      line:{{color:'#f97316',width:2}}, marker:{{size:3}}, name:'DCO\\u2082',
+      fill:'tozeroy', fillcolor:'rgba(249,115,22,0.06)'}},
+  ], Object.assign({{}}, pLayout, {{
+    yaxis:{{gridcolor:'#e2e8f0',title:{{text:'mg/L',font:{{size:10}}}}}},
+    title:{{text:'Dissolved CO\\u2082',font:{{size:13}}}},
+    showlegend:false
+  }}), pCfg);
+
+  // Chart 3: Biomass
   Plotly.newPlot('chart-biomass-'+sid, [
     {{x:c.times, y:c.biomass, type:'scatter', mode:'lines+markers',
       line:{{color:'#10b981',width:2}}, marker:{{size:3}}, name:'Biomass',
@@ -903,6 +1013,20 @@ function initCharts(sid) {{
     yaxis:{{gridcolor:'#e2e8f0',title:{{text:'mg/(L\\u00b7h)',font:{{size:10}}}}}},
     title:{{text:'O\\u2082 Uptake & CO\\u2082 Evolution',font:{{size:13}}}},
     legend:{{x:0.65,y:0.95,font:{{size:9}}}},
+    showlegend:true
+  }}), pCfg);
+
+  // Chart 6: Gas Holdup + Growth Rate (dual y-axis)
+  Plotly.newPlot('chart-holdup-'+sid, [
+    {{x:c.times, y:c.gas_holdup, type:'scatter', mode:'lines+markers',
+      line:{{color:'#0ea5e9',width:2}}, marker:{{size:3}}, name:'Gas Holdup (%)'}},
+    {{x:c.times, y:c.growth_rate, type:'scatter', mode:'lines+markers',
+      line:{{color:'#a855f7',width:2,dash:'dot'}}, marker:{{size:3}}, name:'\\u03bc (h\\u207b\\u00b9)', yaxis:'y2'}},
+  ], Object.assign({{}}, pLayout, {{
+    yaxis:{{gridcolor:'#e2e8f0',title:{{text:'%',font:{{size:10}}}}}},
+    yaxis2:{{overlaying:'y',side:'right',gridcolor:'transparent',title:{{text:'h\\u207b\\u00b9',font:{{size:10}}}}}},
+    title:{{text:'Gas Holdup & Growth Rate',font:{{size:13}}}},
+    legend:{{x:0.5,y:0.95,font:{{size:9}}}},
     showlegend:true
   }}), pCfg);
 }}
