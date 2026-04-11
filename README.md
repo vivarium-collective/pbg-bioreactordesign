@@ -2,6 +2,8 @@
 
 Process-bigraph wrapper for [BioReactorDesign (BiRD)](https://github.com/NatLabRockies/BioReactorDesign) bioreactor simulation.
 
+**[View the Interactive Demo Report](https://vivarium-collective.github.io/pbg-bioreactordesign/report.html)** — three E. coli fermentation scenarios from 2 L bench scale to 10,000 L production, with 3D reactor viewers, time-series charts, and bigraph architecture diagrams.
+
 Implements a 0D (well-mixed) bioreactor model using BiRD's physics correlations:
 - **Higbie penetration theory** for volumetric mass transfer coefficient (kLa)
 - **Temperature-dependent Henry's law** for gas-liquid equilibrium
@@ -12,7 +14,7 @@ Implements a 0D (well-mixed) bioreactor model using BiRD's physics correlations:
 ## Installation
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/vivarium-collective/pbg-bioreactordesign.git
 cd pbg-bioreactordesign
 uv venv .venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
@@ -79,7 +81,7 @@ Time-driven Process. Time units: **hours**.
 | `dissolved_o2` | mg/L | Dissolved oxygen concentration |
 | `dissolved_co2` | mg/L | Dissolved CO2 concentration |
 | `biomass` | g/L | Biomass concentration |
-| `gas_holdup` | — | Gas volume fraction (0–1) |
+| `gas_holdup` | — | Gas volume fraction (0-1) |
 | `kla_o2` | 1/h | O2 mass transfer coefficient |
 | `kla_co2` | 1/h | CO2 mass transfer coefficient |
 | `o2_saturation` | mg/L | O2 saturation concentration |
@@ -91,8 +93,8 @@ Time-driven Process. Time units: **hours**.
 
 ```
 BiRDReactorProcess (Process)
-├── inputs:  gas_flow_rate_Lpm ← stores
-├── outputs: dissolved_o2, biomass, kla_o2, ... → stores
+├── inputs:  gas_flow_rate_Lpm <- stores
+├── outputs: dissolved_o2, biomass, kla_o2, ... -> stores
 └── internal: scipy ODE solver (RK45)
          ├── Higbie kLa (penetration theory)
          ├── Henry's law (T-dependent)
@@ -108,12 +110,14 @@ python demo/demo_report.py
 ```
 
 Generates `demo/report.html` — a self-contained interactive report with:
-- 3D reactor geometry viewers (Three.js)
-- Plotly time-series charts (DO, biomass, kLa, uptake rates)
+- 3D reactor geometry viewers (Three.js) with variable color selector
+- 6 Plotly time-series charts (DO, CO2, biomass, kLa, uptake/evolution rates, gas holdup + growth rate)
 - Bigraph architecture diagrams
 - Interactive PBG document trees
 
-Three configurations: E. coli bubble column (20L), CHO stirred tank (250L), yeast airlift (10,000L).
+Three E. coli scenarios: lab-scale batch (2L), high-cell-density stirred tank (50L), industrial airlift (10,000L).
+
+Or view the hosted report: **https://vivarium-collective.github.io/pbg-bioreactordesign/report.html**
 
 ## Tests
 
