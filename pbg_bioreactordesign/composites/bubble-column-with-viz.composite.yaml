@@ -1,5 +1,6 @@
 name: bubble-column-with-viz
 description: "BiRD bubble-column bioreactor demo with a wired Visualization Step. Each update produces a Plotly HTML figure of the running scalar trajectories, written to the 'viz_html' store."
+tags: [bioreactor, mass-transfer, demo, visualization]
 
 requires:
   processes: [BiRDReactorProcess, BioreactorPlots, RAMEmitter]

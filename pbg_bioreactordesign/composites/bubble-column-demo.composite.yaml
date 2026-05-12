@@ -1,5 +1,6 @@
 name: bubble-column-demo
 description: "Tiny BiRD 0D bubble-column bioreactor demo: aerobic microbial growth in a 20 L vessel under air sparging. Emits dissolved O2/CO2, biomass, gas holdup, and kLa each step."
+tags: [bioreactor, mass-transfer, demo]
 
 requires:
   processes: [BiRDReactorProcess, RAMEmitter]
