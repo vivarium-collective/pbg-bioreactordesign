@@ -1,0 +1,38 @@
+schema_version: 3
+name: bird-04-reactor-geometry
+status: planned
+question: |
+  Can the reactor support a stirred-tank kLa correlation (the benchmark
+  geometry) alongside the bubble-column form, selectable by configuration?
+hypothesis: |
+  A geometry configuration field selects the kLa correlation, and under
+  stirred-tank geometry kLa matches the published correlation for the
+  configured power input and superficial gas velocity within tolerance.
+objective: |
+  Add a selectable stirred-tank kLa correlation and measure kLa against the
+  published correlation to determine the model can be parameterized to a
+  specific vessel.
+description: |
+  The high-cell-density benchmark uses a stirred-tank vessel; the current
+  transport form assumes bubble-column. This study adds a configurable
+  geometry and validates the stirred-tank kLa against literature, resolving
+  the reactor-geometry-for-benchmark question from mbp-03. Builds on the
+  coupled loop established in bird-02.
+parent_studies:
+  - {study: bird-02-closed-loop-liveness, condition: tests-passed}
+expected_behavior:
+  - name: geometry-selectable-via-config
+    observable: active kLa correlation
+    condition: chosen by a geometry configuration field (stirred-tank | bubble-column)
+    rationale: |
+      Lets the coupled model be parameterized to a named vessel.
+  - name: kla-matches-stirred-tank-correlation
+    observable: computed kLa under stirred-tank geometry
+    condition: matches the published correlation for the configured power
+      input and superficial gas velocity within tolerance
+    rationale: |
+      Grounds the transport rate in the benchmark's actual hydrodynamics.
+baseline: []
+variants: []
+interventions: []
+runs: []

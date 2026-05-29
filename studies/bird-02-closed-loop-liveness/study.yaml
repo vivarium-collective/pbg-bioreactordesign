@@ -1,0 +1,52 @@
+schema_version: 3
+name: bird-02-closed-loop-liveness
+status: planned
+question: |
+  When BiRDTransportProcess is coupled to the Phase-1 MonodCellProcess at a
+  static high biomass density, does the reactor→cell feedback fire —
+  dissolved O2 dropping below saturation as consumption outpaces transport —
+  with O2 mass balance closing across cell and reactor contributions?
+hypothesis: |
+  At an impactful biomass density, steady-state dissolved O2 settles below
+  saturation, d[O2]/dt equals reactor transport minus cell consumption at
+  every step, and removing the biomass input returns O2 to saturation —
+  confirming a live, bidirectional loop.
+objective: |
+  Compose BiRDTransportProcess with MonodCellProcess at a constant high
+  biomass density and measure dissolved O2 and the O2 balance to determine
+  that the closed loop is live, not merely wired.
+description: |
+  This is the integration test the single-process reactor cannot provide:
+  the reactor→cell direction only fires when biomass is dense enough to
+  perturb reactor state. The Phase-1 MonodCellProcess supplies biomass and
+  an O2 consumption flux under the cell-side contract; a constant scale
+  factor on a representative biomass is sufficient here — no growth dynamics
+  are needed to establish liveness.
+
+  Distinct from bird-01's per-edge unit checks, this study exercises the
+  composed loop end-to-end and asserts mass-balance closure across the two
+  processes' contributions at the shared dissolved-O2 store.
+parent_studies:
+  - {study: bird-01-transport-process, condition: tests-passed}
+expected_behavior:
+  - name: dissolved-o2-drops-below-saturation-at-high-biomass
+    observable: steady-state dissolved O2
+    condition: below saturation concentration at the high-density operating point
+    rationale: |
+      Liveness crux — consumption exceeding transport supply must pull DO
+      down, demonstrating the reactor→cell direction fires.
+  - name: o2-mass-balance-closes
+    observable: d[O2]/dt vs (reactor transport − cell consumption)
+    condition: equal at every step within tolerance
+    rationale: |
+      Confirms the cell and reactor deltas aggregate correctly at the shared
+      store without double-counting or leakage.
+  - name: dissolved-o2-recovers-when-biomass-removed
+    observable: dissolved O2 after biomass input set to zero
+    condition: returns to saturation
+    rationale: |
+      Shows the feedback is bidirectional and not a fixed offset.
+baseline: []
+variants: []
+interventions: []
+runs: []

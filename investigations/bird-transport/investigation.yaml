@@ -1,0 +1,51 @@
+schema_version: 2
+name: bird-transport
+title: "BiRD reactor transport refactor for cell-engine coupling"
+created: '2026-05-29'
+status: planning
+question: |
+  Can the BiRD 0D reactor physics be refactored so that biomass is an
+  input — an external cell engine owns growth and substrate exchange while
+  the reactor process owns only gas–liquid transport — and does the
+  resulting coupled system exercise the reactor→cell feedback that a
+  single-process reactor cannot?
+hypothesis: |
+  Extracting the shared transport physics (kLa, Higbie, Henry, Wilke–Chang)
+  into a module consumed by BiRDReactorProcess (transport + internal Monod,
+  standalone) and a new BiRDTransportProcess (transport only,
+  biomass-as-input) preserves the standalone reactor's behavior exactly and
+  enables a coupled configuration in which dissolved O2 responds to
+  externally supplied biomass. At a density where consumption exceeds
+  transport supply, dissolved O2 drops below saturation and O2 mass balance
+  closes across the cell and reactor contributions.
+description: |
+  The current BiRDReactorProcess owns biomass internally via a Monod ODE,
+  which conflicts with a cell engine that also owns biomass; today this is
+  worked around with a bird_disable_internal_biomass flag. This
+  investigation replaces that with a single-responsibility split: a shared
+  transport module, the existing BiRDReactorProcess kept for standalone use
+  (transport + an extracted MonodCellProcess), and a new BiRDTransportProcess
+  that takes biomass/substrate/dissolved gas as inputs and emits only the
+  transport contribution.
+
+  The four phases proceed from the refactor (Phase 1, which also yields the
+  MonodCellProcess that serves as the trivial cell-side fixture per the
+  cell-side interface contract), to an integration test that the closed
+  loop fires at impactful biomass (Phase 2), to making the coupling interval
+  tunable (Phase 3), to supporting the stirred-tank geometry of the target
+  benchmark (Phase 4). This is the upstream reactor-physics dependency for
+  the v2ecoli multiscale-bioprocess study mbp-03, which declares
+  pbg-bioreactor-transport-fork as a hard prerequisite.
+expert_docs:
+  - bioreactor_transport_plan
+  - cell_side_interface_contract
+studies:
+  - bird-01-transport-process
+  - bird-02-closed-loop-liveness
+  - bird-03-coupling-interval
+  - bird-04-reactor-geometry
+acceptance_criteria:
+  - {study: bird-01-transport-process, behavior: o2-transport-equals-kla-driving-force}
+  - {study: bird-02-closed-loop-liveness, behavior: dissolved-o2-drops-below-saturation-at-high-biomass}
+  - {study: bird-03-coupling-interval, behavior: coupled-trajectory-converges-as-interval-decreases}
+  - {study: bird-04-reactor-geometry, behavior: kla-matches-stirred-tank-correlation}

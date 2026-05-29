@@ -1,0 +1,37 @@
+schema_version: 3
+name: bird-03-coupling-interval
+status: planned
+question: |
+  Can the reactor coupling/update interval be exposed as a tunable parameter,
+  and does the coupled trajectory converge as the interval decreases?
+hypothesis: |
+  Making the interval configurable and shrinking it produces a convergent
+  dissolved-O2 trajectory (changes below tolerance under interval halving),
+  so the interval can trade fidelity against cost without changing the
+  qualitative result.
+objective: |
+  Expose the coupling interval as a parameter and measure the dissolved-O2
+  trajectory across interval values to determine convergence behavior.
+description: |
+  The BiRD coupling interval is currently fixed. This study parameterizes it
+  and characterizes convergence, resolving the coupler-timestep-tunability
+  question raised by v2ecoli mbp-03. Builds on the live coupled loop from
+  bird-02.
+parent_studies:
+  - {study: bird-02-closed-loop-liveness, condition: tests-passed}
+expected_behavior:
+  - name: coupling-interval-is-configurable
+    observable: coupling interval used by a run
+    condition: honors the configured parameter value (documented default)
+    rationale: |
+      Precondition for any convergence study and for mbp-03's timestep
+      decision.
+  - name: coupled-trajectory-converges-as-interval-decreases
+    observable: dissolved-O2 trajectory under interval halving
+    condition: changes by less than a stated tolerance
+    rationale: |
+      Demonstrates the result is convergent rather than interval-dependent.
+baseline: []
+variants: []
+interventions: []
+runs: []
