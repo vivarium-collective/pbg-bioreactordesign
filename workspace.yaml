@@ -7,7 +7,19 @@ observables: []
 visualizations: []
 simulations: []
 datasets: []
-expert_docs: []
+expert_docs:
+  - name: bioreactor_transport_plan
+    title: BiRD reactor transport refactor for cell-engine coupling
+    path: references/expert/bioreactor-transport-plan.md
+    description: |
+      Plan for the biomass-as-input transport refactor: extract the shared
+      gas-liquid transport physics into a module consumed by two processes
+      (BiRDReactorProcess standalone + a new BiRDTransportProcess that takes
+      biomass as input and emits only the transport contribution). Decomposes
+      into four phases (transport-process split, closed-loop liveness at
+      impactful density, coupling-interval tunability, reactor geometry).
+      Source for scaffold-from-plan. Upstream dependency for the v2ecoli
+      multiscale-bioprocess mbp-03 coupling study.
 references_bib: references/papers.bib
 server:
   enabled: true
