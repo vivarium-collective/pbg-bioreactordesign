@@ -1,0 +1,13 @@
+schema_version: 2
+name: pbg-bioreactordesign
+created: "2026-05-29"
+plugin_version: 0.8.1
+package_path: pbg_bioreactordesign
+observables: []
+visualizations: []
+simulations: []
+datasets: []
+expert_docs: []
+references_bib: references/papers.bib
+server:
+  enabled: true
