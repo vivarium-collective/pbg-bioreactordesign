@@ -58,8 +58,13 @@ internal Monod biomass ODE) for standalone use, and add
 `BiRDTransportProcess` (transport only). The new process takes biomass,
 substrate, and dissolved-gas concentrations as **input stores** and emits
 **only** the transport contribution — no biomass equation, no substrate
-consumption. Remove the `bird_disable_internal_biomass` flag, which the
-refactor makes obsolete.
+consumption. The biomass/consumption term currently internal to
+`BiRDReactorProcess` is factored into a small `MonodCellProcess` that
+conforms to the cell-side interface contract; standalone
+`BiRDReactorProcess` is then `MonodCellProcess` + transport composed, and
+the same `MonodCellProcess` is the trivial cell-side fixture for the
+coupled studies (Phases 2–4). Remove the `bird_disable_internal_biomass`
+flag, which the refactor makes obsolete.
 
 **Acceptance criteria.**
 - `transport-process-emits-zero-biomass-delta` — `BiRDTransportProcess`
@@ -73,18 +78,22 @@ refactor makes obsolete.
 - `reactor-process-matches-prerefactor-baseline` — `BiRDReactorProcess`
   run standalone produces trajectories identical (within numerical
   tolerance) to the pre-refactor implementation.
+- `monod-cell-conforms-to-interface-contract` — the extracted
+  `MonodCellProcess` exposes the cell-side contract's output stores
+  (`cell_mass`, `external_exchange_fluxes`, growth rate) with correct
+  units, verified against the conformance fixture.
 
 ## Phase 2: Closed-loop liveness at impactful biomass density
 
-**Objective.** Compose `BiRDTransportProcess` with a biomass source at a
-**static high biomass density** and confirm the reactor→cell feedback
-fires: with consumption exceeding transport supply, dissolved O2 drops
-below saturation, and O2 mass balance closes across the cell-consumption
-and reactor-transport contributions at the shared store. This is an
-integration test of the closed loop, distinct from Phase 1's per-edge
-unit checks; it requires a density high enough to perturb reactor state
-(a constant scale factor on a representative biomass is sufficient — no
-growth dynamics needed at this phase).
+**Objective.** Compose `BiRDTransportProcess` with the `MonodCellProcess`
+from Phase 1 at a **static high biomass density** and confirm the
+reactor→cell feedback fires: with consumption exceeding transport supply,
+dissolved O2 drops below saturation, and O2 mass balance closes across the
+cell-consumption and reactor-transport contributions at the shared store.
+This is an integration test of the closed loop, distinct from Phase 1's
+per-edge unit checks; it requires a density high enough to perturb reactor
+state (a constant scale factor on a representative biomass is sufficient —
+no growth dynamics needed at this phase).
 
 **Acceptance criteria.**
 - `dissolved-o2-drops-below-saturation-at-high-biomass` — at the high-
@@ -127,7 +136,8 @@ parameterized to a specific vessel.
 ## References
 
 - `cell_side_interface_contract.md` — the substitutability contract the
-  reactor side must honor (biomass + exchange in, transport out).
+  reactor side must honor (biomass + exchange in, transport out). The
+  `MonodCellProcess` built in Phase 1 is the trivial conforming engine.
 - BiRD-toolbox physics lineage (kLa / Higbie / Henry / Wilke–Chang) —
   prior art for the transport correlations; see `pbg_bioreactordesign/`.
 - v2ecoli `multiscale-bioprocess` investigation, study `mbp-03` — the

@@ -20,6 +20,17 @@ expert_docs:
       impactful density, coupling-interval tunability, reactor geometry).
       Source for scaffold-from-plan. Upstream dependency for the v2ecoli
       multiscale-bioprocess mbp-03 coupling study.
+  - name: cell_side_interface_contract
+    title: Cell-side interface contract (substitutability)
+    path: references/expert/cell_side_interface_contract.md
+    description: |
+      The substitutability contract lifted from the v2ecoli mbp
+      investigation. Defines what a cell-side engine provides (cell_mass,
+      external_exchange_fluxes, growth_rate) and what the reactor provides
+      (external concentrations, volume, dissolved O2). BiRDTransportProcess
+      is the REACTOR side under this contract; the Monod placeholder is the
+      trivial conforming cell-side engine used as the test fixture for the
+      coupled studies.
 references_bib: references/papers.bib
 server:
   enabled: true
