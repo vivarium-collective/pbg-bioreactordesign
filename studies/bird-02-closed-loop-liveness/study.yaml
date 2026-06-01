@@ -28,12 +28,12 @@ description: |
   processes' contributions at the shared dissolved-O2 store.
 parent_studies:
   - {study: bird-01-transport-process, condition: tests-passed}
-# Behavior tests in the structured (given, measure, expect) grammar; all
-# status: stub (xfail) until Phase-1 lands the coupled composite and its
-# observables. Several conditions here (config-selection, cross-run
-# convergence, "returns to saturation") are placeholders — the grammar is
-# trajectory-shaped and doesn't yet express them precisely; finalize when the
-# coupled composite exists and a baseline run is recorded.
+# Behavior tests in the structured (given, measure, expect) grammar.
+# STATUS: the coupled_reactor_cell composite has landed (Phase-1, commit
+# dc3714f) and all three behaviors are verified by tests/test_bird02_liveness.py.
+# They remain status: stub here because the dashboard measure grammar can't yet
+# express these rate/balance assertions over the flat emitter output (see
+# pbg-superpowers issue #96) — the pytest suite is the authoritative verifier.
 expected_behavior:
   - name: dissolved-o2-drops-below-saturation-at-high-biomass
     en: "At a high biomass density, steady-state dissolved O2 settles below the
@@ -44,8 +44,8 @@ expected_behavior:
     expect: {op: in_range, low: 0.0, high: 8.0}
     status: stub
     requires: [{listener: dissolved_o2}, {variant_hook: biomass_density}]
-    notes: "Upper bound is C*_O2 (~8 mg/L at 25°C, 1 atm); finalize against the
-            composite's computed saturation. Pending Phase-1 coupled composite."
+    notes: "Verified by tests/test_bird02_liveness.py::test_do_drops_below_saturation_at_high_biomass
+            — at 5 g/L (growth off), steady-state DO settles below C*_O2 and stays non-negative."
   - name: o2-mass-balance-closes
     en: "d[O2]/dt equals reactor transport minus cell consumption at every step
          within tolerance — the two processes' deltas aggregate at the shared store
@@ -55,8 +55,10 @@ expected_behavior:
     expect: {op: in_range, low: -1.0e-6, high: 1.0e-6}
     status: stub
     requires: [{listener: o2_balance_residual}]
-    notes: "Needs an emitted residual = d[O2]/dt − (transport − consumption);
-            pending Phase-1 coupled composite."
+    notes: "Verified by tests/test_bird02_liveness.py::test_o2_mass_balance_closes_process_math
+            (d[O2] == transport − consumption, computed independently) and
+            ::test_o2_mass_balance_closes_in_composite (the shared store aggregates both deltas).
+            The cell emits o2_exchange_delta so the balance is observable."
   - name: dissolved-o2-recovers-when-biomass-removed
     en: "Setting the biomass input to zero returns dissolved O2 to saturation,
          confirming the feedback is bidirectional and not a fixed offset."
@@ -65,8 +67,8 @@ expected_behavior:
     expect: {op: in_range, low: 7.0, high: 8.5}
     status: stub
     requires: [{variant_hook: biomass_input_zero}, {listener: dissolved_o2}]
-    notes: "Real check runs against a biomass-removed variant and asserts return
-            to C*_O2; add the variant with the Phase-1 composite."
+    notes: "Verified by tests/test_bird02_liveness.py::test_do_recovers_when_biomass_removed
+            — with negligible biomass, transport restores depleted DO to ~C*_O2 (8.21 mg/L)."
 baseline:
   - name: coupled-reactor-cell
     composite: pbg_bioreactordesign.coupled_reactor_cell

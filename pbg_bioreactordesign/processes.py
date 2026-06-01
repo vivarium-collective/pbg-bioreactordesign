@@ -293,6 +293,10 @@ class MonodCellProcess(Process):
             'cell_mass': 'overwrite[float]',
             'growth_rate': 'overwrite[float]',
             'external_exchange_fluxes': 'overwrite[map[float]]',
+            # Applied exchange deltas this step (the actual values written to the
+            # shared stores, post-cap) — let a coupler / test close the O2 balance.
+            'o2_exchange_delta': 'overwrite[float]',
+            'co2_exchange_delta': 'overwrite[float]',
         }
 
     def _kinetics(self, C_O2):
@@ -313,6 +317,8 @@ class MonodCellProcess(Process):
                 'CARBON-DIOXIDE[p]': k['q_o2'] * self.config['respiratory_quotient']
                 * (44.01 / 32.0),
             },
+            'o2_exchange_delta': 0.0,
+            'co2_exchange_delta': 0.0,
         }
 
     def update(self, state, interval):
@@ -345,6 +351,8 @@ class MonodCellProcess(Process):
                 'CARBON-DIOXIDE[p]': k['q_o2'] * self.config['respiratory_quotient']
                 * (44.01 / 32.0),
             },
+            'o2_exchange_delta': d_o2,
+            'co2_exchange_delta': d_co2,
         }
 
 

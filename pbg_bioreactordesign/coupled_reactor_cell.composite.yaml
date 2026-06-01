@@ -75,6 +75,7 @@ state:
       cell_mass: [stores, cell_mass]
       growth_rate: [stores, specific_growth_rate]
       external_exchange_fluxes: [stores, external_exchange_fluxes]
+      o2_exchange_delta: [stores, o2_exchange_delta]
   stores:
     dissolved_o2: 8.0
     dissolved_co2: 0.5
@@ -92,6 +93,7 @@ state:
         cell_mass: float
         specific_growth_rate: float
         o2_transport_delta: float
+        o2_exchange_delta: float
         kla_o2: float
         time: float
     inputs:
@@ -101,5 +103,6 @@ state:
       cell_mass: [stores, cell_mass]
       specific_growth_rate: [stores, specific_growth_rate]
       o2_transport_delta: [stores, o2_transport_delta]
+      o2_exchange_delta: [stores, o2_exchange_delta]
       kla_o2: [stores, kla_o2]
       time: [global_time]
