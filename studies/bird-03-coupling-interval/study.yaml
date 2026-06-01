@@ -19,19 +19,41 @@ description: |
   bird-02.
 parent_studies:
   - {study: bird-02-closed-loop-liveness, condition: tests-passed}
+# Behavior tests in the structured (given, measure, expect) grammar; all
+# status: stub (xfail) until Phase-1 + bird-02 land the coupled composite and a
+# tunable interval. The convergence test is a cross-run comparison the current
+# grammar doesn't express directly (no multi-run-diff measure) — placeholder
+# here; see framework log #14 vicinity.
 expected_behavior:
   - name: coupling-interval-is-configurable
-    observable: coupling interval used by a run
-    condition: honors the configured parameter value (documented default)
-    rationale: |
-      Precondition for any convergence study and for mbp-03's timestep
-      decision.
+    en: "The coupling/update interval is a process parameter with a documented
+         default, and runs honor the configured value."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "coupling_interval", reduce: median}
+    expect: {op: in_range, low: 0.0, high: 1.0e6}
+    status: stub
+    requires: [{variant_hook: coupling_interval}]
+    notes: "Structural/config assertion — real check is 'emitted interval == the
+            configured parameter'; the grammar has no equals-param op, so this is
+            a placeholder band. Pending tunable interval (this study's Build)."
   - name: coupled-trajectory-converges-as-interval-decreases
-    observable: dissolved-O2 trajectory under interval halving
-    condition: changes by less than a stated tolerance
-    rationale: |
-      Demonstrates the result is convergent rather than interval-dependent.
-baseline: []
+    en: "Halving the coupling interval changes the dissolved-O2 trajectory by less
+         than a stated tolerance — convergence rather than interval-dependence."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "dissolved_o2", reduce: series}
+    expect: {op: in_range, low: 0.0, high: 8.0}
+    status: stub
+    requires: [{variant_hook: coupling_interval}]
+    notes: "Real check compares two interval variants (interval vs interval/2) and
+            asserts max trajectory delta < tolerance. Cross-run convergence is not
+            expressible in the current measure grammar — placeholder for now."
+baseline:
+  - name: coupled-reactor-cell
+    composite: pbg_bioreactordesign.coupled_reactor_cell
+    params: {}
 variants: []
 interventions: []
 runs: []
+# NOTE: pbg_bioreactordesign.coupled_reactor_cell is the Phase-1 coupled
+# composite (built in bird-01); this study is gated on bird-02 → bird-01.
+# Named here so the spec documents intent and the study renders.

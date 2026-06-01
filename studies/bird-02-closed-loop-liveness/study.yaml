@@ -28,25 +28,53 @@ description: |
   processes' contributions at the shared dissolved-O2 store.
 parent_studies:
   - {study: bird-01-transport-process, condition: tests-passed}
+# Behavior tests in the structured (given, measure, expect) grammar; all
+# status: stub (xfail) until Phase-1 lands the coupled composite and its
+# observables. Several conditions here (config-selection, cross-run
+# convergence, "returns to saturation") are placeholders — the grammar is
+# trajectory-shaped and doesn't yet express them precisely; finalize when the
+# coupled composite exists and a baseline run is recorded.
 expected_behavior:
   - name: dissolved-o2-drops-below-saturation-at-high-biomass
-    observable: steady-state dissolved O2
-    condition: below saturation concentration at the high-density operating point
-    rationale: |
-      Liveness crux — consumption exceeding transport supply must pull DO
-      down, demonstrating the reactor→cell direction fires.
+    en: "At a high biomass density, steady-state dissolved O2 settles below the
+         saturation concentration — consumption outpacing transport pulls DO down,
+         showing the reactor→cell direction fires."
+    given: {run: baseline, window: second_half}
+    measure: {kind: listener_path, path: "dissolved_o2", reduce: median}
+    expect: {op: in_range, low: 0.0, high: 8.0}
+    status: stub
+    requires: [{listener: dissolved_o2}, {variant_hook: biomass_density}]
+    notes: "Upper bound is C*_O2 (~8 mg/L at 25°C, 1 atm); finalize against the
+            composite's computed saturation. Pending Phase-1 coupled composite."
   - name: o2-mass-balance-closes
-    observable: d[O2]/dt vs (reactor transport − cell consumption)
-    condition: equal at every step within tolerance
-    rationale: |
-      Confirms the cell and reactor deltas aggregate correctly at the shared
-      store without double-counting or leakage.
+    en: "d[O2]/dt equals reactor transport minus cell consumption at every step
+         within tolerance — the two processes' deltas aggregate at the shared store
+         without double-counting or leakage."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "o2_balance_residual", reduce: series}
+    expect: {op: in_range, low: -1.0e-6, high: 1.0e-6}
+    status: stub
+    requires: [{listener: o2_balance_residual}]
+    notes: "Needs an emitted residual = d[O2]/dt − (transport − consumption);
+            pending Phase-1 coupled composite."
   - name: dissolved-o2-recovers-when-biomass-removed
-    observable: dissolved O2 after biomass input set to zero
-    condition: returns to saturation
-    rationale: |
-      Shows the feedback is bidirectional and not a fixed offset.
-baseline: []
+    en: "Setting the biomass input to zero returns dissolved O2 to saturation,
+         confirming the feedback is bidirectional and not a fixed offset."
+    given: {run: baseline, window: second_half}
+    measure: {kind: listener_path, path: "dissolved_o2", reduce: median}
+    expect: {op: in_range, low: 7.0, high: 8.5}
+    status: stub
+    requires: [{variant_hook: biomass_input_zero}, {listener: dissolved_o2}]
+    notes: "Real check runs against a biomass-removed variant and asserts return
+            to C*_O2; add the variant with the Phase-1 composite."
+baseline:
+  - name: coupled-reactor-cell
+    composite: pbg_bioreactordesign.coupled_reactor_cell
+    params: {}
 variants: []
 interventions: []
 runs: []
+# NOTE: pbg_bioreactordesign.coupled_reactor_cell does not exist yet — it is the
+# BiRDTransportProcess + MonodCellProcess composition built in Phase 1 (bird-01).
+# This study is gated on bird-01 (parent_studies: tests-passed), so the baseline
+# resolves once Phase-1 lands. Named here so the spec documents intent and renders.

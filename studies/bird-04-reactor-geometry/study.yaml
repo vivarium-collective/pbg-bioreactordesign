@@ -20,19 +20,41 @@ description: |
   coupled loop established in bird-02.
 parent_studies:
   - {study: bird-02-closed-loop-liveness, condition: tests-passed}
+# Behavior tests in the structured (given, measure, expect) grammar; all
+# status: stub (xfail) until the stirred-tank geometry option is built and the
+# coupled composite exists. The geometry-selection test is a config assertion
+# the grammar doesn't express precisely — placeholder band, see notes.
 expected_behavior:
   - name: geometry-selectable-via-config
-    observable: active kLa correlation
-    condition: chosen by a geometry configuration field (stirred-tank | bubble-column)
-    rationale: |
-      Lets the coupled model be parameterized to a named vessel.
+    en: "Reactor geometry (stirred-tank vs bubble-column) is chosen by a
+         configuration field, selecting the active kLa correlation."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "active_kla_correlation", reduce: series}
+    expect: {op: in_range, low: 0.0, high: 1.0e6}
+    status: stub
+    requires: [{variant_hook: reactor_geometry}]
+    notes: "Categorical/config assertion — real check is 'active correlation ==
+            configured geometry'; placeholder band until an emitted geometry
+            selector exists (this study's Build)."
   - name: kla-matches-stirred-tank-correlation
-    observable: computed kLa under stirred-tank geometry
-    condition: matches the published correlation for the configured power
-      input and superficial gas velocity within tolerance
-    rationale: |
-      Grounds the transport rate in the benchmark's actual hydrodynamics.
-baseline: []
+    en: "Under stirred-tank geometry, computed kLa matches the published
+         correlation for the configured power input and superficial gas velocity
+         within tolerance."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "kla_o2", reduce: median}
+    expect: {op: in_range, low: 0.0, high: 1.0e6}
+    status: stub
+    requires: [{variant_hook: reactor_geometry}, {listener: kla_o2}]
+    notes: "Real check is 'computed kLa within tolerance of the literature
+            correlation value' at the configured P/V and u_g; finalize the band
+            once the stirred-tank correlation is implemented."
+baseline:
+  - name: coupled-reactor-cell
+    composite: pbg_bioreactordesign.coupled_reactor_cell
+    params: {}
 variants: []
 interventions: []
 runs: []
+# NOTE: pbg_bioreactordesign.coupled_reactor_cell is the Phase-1 coupled
+# composite (built in bird-01); this study is gated on bird-02 → bird-01.
+# Named here so the spec documents intent and the study renders.
