@@ -50,7 +50,7 @@ expected_behavior:
             grammar (issue #96), hence pytest."
 baseline:
   - name: coupled-reactor-cell
-    composite: pbg_bioreactordesign.coupled_reactor_cell
+    composite: pbg_bioreactordesign.composites.coupled_reactor_cell
     params: {}
 variants: []
 interventions: []

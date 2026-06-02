@@ -71,7 +71,7 @@ expected_behavior:
             — with negligible biomass, transport restores depleted DO to ~C*_O2 (8.21 mg/L)."
 baseline:
   - name: coupled-reactor-cell
-    composite: pbg_bioreactordesign.coupled_reactor_cell
+    composite: pbg_bioreactordesign.composites.coupled_reactor_cell
     params: {}
 variants: []
 interventions: []

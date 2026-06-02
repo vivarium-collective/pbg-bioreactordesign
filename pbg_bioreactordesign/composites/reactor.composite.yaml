@@ -1,16 +1,14 @@
 # Declarative catalog spec for the standalone 0D BiRD bioreactor.
 #
-# This is the data-first equivalent of make_reactor_document() in
-# composites.py (the legacy Python factory). It exists so the dashboard
-# catalog can discover, display, and run the standalone reactor, and so
-# studies can name it as a `baseline:` composite.
+# This is the data-first equivalent of make_reactor_document() in this
+# package's composites/__init__.py (the Python factory). It exists so the
+# dashboard catalog can discover, display, and run the standalone reactor,
+# and so studies can name it as a `baseline:` composite.
 #
-# Discovered by pbg_superpowers.composite_discovery via rglob('*.composite.yaml').
-# spec_id: pbg_bioreactordesign.reactor
-#
-# NOTE: lives at the package root (not pbg_bioreactordesign/composites/)
-# because composites.py occupies that name. Migrating the legacy factory
-# into a composites/ package is a tracked follow-up.
+# Lives in pbg_bioreactordesign/composites/ so BOTH discovery paths find it:
+# pbg_superpowers.composite_discovery (rglob) AND the dashboard's
+# composite_lookup (which globs <pkg>/composites/ only).
+# spec_id: pbg_bioreactordesign.composites.reactor
 
 name: reactor
 description: >

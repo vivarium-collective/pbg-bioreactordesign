@@ -107,7 +107,7 @@ expected_behavior:
             — asserts cell_mass, growth_rate, and external_exchange_fluxes (O2<0 uptake, CO2>0) are exposed."
 baseline:
   - name: standalone-reactor
-    composite: pbg_bioreactordesign.reactor
+    composite: pbg_bioreactordesign.composites.reactor
     params: {}
 variants: []
 interventions: []
