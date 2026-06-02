@@ -1,60 +1,93 @@
 schema_version: 3
 name: bird-04-reactor-geometry
 status: planned
-question: |
-  Can the reactor support a stirred-tank kLa correlation (the benchmark
+question: 'Can the reactor support a stirred-tank kLa correlation (the benchmark
+
   geometry) alongside the bubble-column form, selectable by configuration?
-hypothesis: |
-  A geometry configuration field selects the kLa correlation, and under
+
+  '
+hypothesis: 'A geometry configuration field selects the kLa correlation, and under
+
   stirred-tank geometry kLa matches the published correlation for the
+
   configured power input and superficial gas velocity within tolerance.
-objective: |
-  Add a selectable stirred-tank kLa correlation and measure kLa against the
+
+  '
+objective: 'Add a selectable stirred-tank kLa correlation and measure kLa against
+  the
+
   published correlation to determine the model can be parameterized to a
+
   specific vessel.
-description: |
-  The high-cell-density benchmark uses a stirred-tank vessel; the current
+
+  '
+description: 'The high-cell-density benchmark uses a stirred-tank vessel; the current
+
   transport form assumes bubble-column. This study adds a configurable
+
   geometry and validates the stirred-tank kLa against literature, resolving
+
   the reactor-geometry-for-benchmark question from mbp-03. Builds on the
+
   coupled loop established in bird-02.
+
+  '
 parent_studies:
-  - {study: bird-02-closed-loop-liveness, condition: tests-passed}
-# Behavior tests in the structured (given, measure, expect) grammar; all
-# status: stub (xfail) until the stirred-tank geometry option is built and the
-# coupled composite exists. The geometry-selection test is a config assertion
-# the grammar doesn't express precisely — placeholder band, see notes.
+- study: bird-02-closed-loop-liveness
+  condition: tests-passed
 expected_behavior:
-  - name: geometry-selectable-via-config
-    en: "Reactor geometry (stirred-tank vs bubble-column) is chosen by a
-         configuration field, selecting the active kLa correlation."
-    given: {run: baseline, window: full}
-    measure: {kind: listener_path, path: "active_kla_correlation", reduce: series}
-    expect: {op: in_range, low: 0.0, high: 1.0e6}
-    status: stub
-    requires: [{variant_hook: reactor_geometry}]
-    notes: "Categorical/config assertion — real check is 'active correlation ==
-            configured geometry'; placeholder band until an emitted geometry
-            selector exists (this study's Build)."
-  - name: kla-matches-stirred-tank-correlation
-    en: "Under stirred-tank geometry, computed kLa matches the published
-         correlation for the configured power input and superficial gas velocity
-         within tolerance."
-    given: {run: baseline, window: full}
-    measure: {kind: listener_path, path: "kla_o2", reduce: median}
-    expect: {op: in_range, low: 0.0, high: 1.0e6}
-    status: stub
-    requires: [{variant_hook: reactor_geometry}, {listener: kla_o2}]
-    notes: "Real check is 'computed kLa within tolerance of the literature
-            correlation value' at the configured P/V and u_g; finalize the band
-            once the stirred-tank correlation is implemented."
+- name: geometry-selectable-via-config
+  en: Reactor geometry (stirred-tank vs bubble-column) is chosen by a configuration
+    field, selecting the active kLa correlation.
+  given:
+    run: baseline
+    window: full
+  measure:
+    kind: listener_path
+    path: active_kla_correlation
+    reduce: series
+  expect:
+    op: in_range
+    low: 0.0
+    high: 1.0e6
+  status: stub
+  requires:
+  - variant_hook: reactor_geometry
+  notes: Verified by tests/test_bird04_geometry.py::test_geometry_selectable_via_config
+    — reactor_type selects the gas-holdup correlation and kla_correlation ('higbie'|'vant_riet')
+    selects the kLa form; the default stays Higbie.
+- name: kla-matches-stirred-tank-correlation
+  en: Under stirred-tank geometry, computed kLa matches the published correlation
+    for the configured power input and superficial gas velocity within tolerance.
+  given:
+    run: baseline
+    window: full
+  measure:
+    kind: listener_path
+    path: kla_o2
+    reduce: median
+  expect:
+    op: in_range
+    low: 0.0
+    high: 1.0e6
+  status: stub
+  requires:
+  - variant_hook: reactor_geometry
+  - listener: kla_o2
+  notes: Verified by tests/test_bird04_geometry.py::test_kla_matches_stirred_tank_correlation
+    — computed kLa equals the published Van't Riet (1979) coalescing-media form 0.026·(P/V)^0.4·u_g^0.5
+    at the configured P/V and u_g (see literature_anchors).
 baseline:
-  - name: coupled-reactor-cell
-    composite: pbg_bioreactordesign.coupled_reactor_cell
-    params: {}
+- name: coupled-reactor-cell
+  composite: pbg_bioreactordesign.coupled_reactor_cell
+  params: {}
 variants: []
 interventions: []
 runs: []
-# NOTE: pbg_bioreactordesign.coupled_reactor_cell is the Phase-1 coupled
-# composite (built in bird-01); this study is gated on bird-02 → bird-01.
-# Named here so the spec documents intent and the study renders.
+literature_anchors:
+- expectation: 'Stirred-tank kLa follows Van''t Riet (1979): kLa[1/s] = 0.026·(P/V)^0.4·u_g^0.5
+    for coalescing media (water).'
+  model_observable: compute_transport_state(kla_correlation='vant_riet').kla_o2 ==
+    0.026·(P/V)^0.4·u_g^0.5·3600
+  source: Van't Riet 1979, Ind. Eng. Chem. Process Des. Dev. 18(3):357-364
+  status_in_workspace: Implemented + verified (tests/test_bird04_geometry.py)

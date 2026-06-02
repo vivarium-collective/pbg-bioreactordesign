@@ -33,9 +33,9 @@ expected_behavior:
     expect: {op: in_range, low: 0.0, high: 1.0e6}
     status: stub
     requires: [{variant_hook: coupling_interval}]
-    notes: "Structural/config assertion — real check is 'emitted interval == the
-            configured parameter'; the grammar has no equals-param op, so this is
-            a placeholder band. Pending tunable interval (this study's Build)."
+    notes: "Verified by tests/test_bird03_coupling_interval.py::test_coupling_interval_is_configurable
+            — the interval is a composite parameter threaded onto both processes; runs honor it
+            (smaller interval → more steps for the same horizon)."
   - name: coupled-trajectory-converges-as-interval-decreases
     en: "Halving the coupling interval changes the dissolved-O2 trajectory by less
          than a stated tolerance — convergence rather than interval-dependence."
@@ -44,9 +44,10 @@ expected_behavior:
     expect: {op: in_range, low: 0.0, high: 8.0}
     status: stub
     requires: [{variant_hook: coupling_interval}]
-    notes: "Real check compares two interval variants (interval vs interval/2) and
-            asserts max trajectory delta < tolerance. Cross-run convergence is not
-            expressible in the current measure grammar — placeholder for now."
+    notes: "Verified by tests/test_bird03_coupling_interval.py::test_coupled_trajectory_converges_as_interval_decreases
+            — DO at a fixed time converges to a fine reference as the interval halves (errors strictly
+            decreasing; finest < 0.005 mg/L). Cross-run convergence isn't expressible in the dashboard
+            grammar (issue #96), hence pytest."
 baseline:
   - name: coupled-reactor-cell
     composite: pbg_bioreactordesign.coupled_reactor_cell

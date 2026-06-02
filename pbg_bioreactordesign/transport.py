@@ -118,6 +118,30 @@ def bubble_rise_velocity(d_bubble_m, rho_gas=1.2):
     return math.sqrt(2.0 * sigma / (RHO_LIQ * d) + G * d / 2.0)
 
 
+def vant_riet_kla(power_per_volume, u_g, coalescing=True):
+    """Stirred-tank volumetric mass transfer coefficient (1/h), Van't Riet (1979).
+
+    The standard literature correlation for mechanically-stirred vessels:
+
+        coalescing (water):       kLa [1/s] = 0.026 · (P/V)^0.4 · u_g^0.5
+        non-coalescing (electrolyte): kLa [1/s] = 0.002 · (P/V)^0.7 · u_g^0.2
+
+    P/V is gassed power per unit liquid volume (W/m³); u_g is the superficial
+    gas velocity (m/s). Returns kLa in 1/h. Valid ~500–10000 W/m³.
+
+    Ref: Van't Riet, K. (1979). Review of measuring methods and results in
+    nonviscous gas-liquid mass transfer in stirred vessels. Ind. Eng. Chem.
+    Process Des. Dev. 18(3), 357-364.
+    """
+    if power_per_volume <= 0.0 or u_g <= 0.0:
+        return 0.0
+    if coalescing:
+        kla_per_s = 0.026 * power_per_volume ** 0.4 * u_g ** 0.5
+    else:
+        kla_per_s = 0.002 * power_per_volume ** 0.7 * u_g ** 0.2
+    return kla_per_s * 3600.0
+
+
 def gas_holdup(reactor_type, Ug, impeller_power_W, volume_L):
     """Gas holdup (-) from superficial gas velocity correlation.
 
@@ -173,8 +197,20 @@ def compute_transport_state(cfg, gas_flow_Lpm):
         cfg['reactor_type'], Ug, cfg['impeller_power_W'], cfg['volume_L'])
     u_slip = slip_velocity(d_b, alpha_gas)
 
-    kla_o2 = higbie_kla('O2', T, u_slip, d_b, alpha_gas)
-    kla_co2 = higbie_kla('CO2', T, u_slip, d_b, alpha_gas)
+    # kLa correlation is selectable (bird-04). Default 'higbie' (penetration
+    # theory, all geometries) preserves pre-existing behavior; 'vant_riet'
+    # selects the stirred-tank correlation grounded in P/V and u_g.
+    correlation = cfg.get('kla_correlation', 'higbie')
+    if correlation == 'vant_riet':
+        p_per_v = cfg.get('impeller_power_W', 0.0) / max(cfg['volume_L'] / 1000.0, 1e-9)
+        kla_o2 = vant_riet_kla(p_per_v, Ug)
+        # CO2 kLa scales with diffusivity^0.5 (penetration-theory scaling),
+        # consistent with how Higbie relates the two species.
+        kla_co2 = kla_o2 * math.sqrt(
+            wilke_chang_diffusivity('CO2', T) / wilke_chang_diffusivity('O2', T))
+    else:
+        kla_o2 = higbie_kla('O2', T, u_slip, d_b, alpha_gas)
+        kla_co2 = higbie_kla('CO2', T, u_slip, d_b, alpha_gas)
 
     cstar_o2 = saturation_concentration('O2', T, P * cfg['o2_fraction_inlet'])
     cstar_co2 = saturation_concentration('CO2', T, P * cfg['co2_fraction_inlet'])

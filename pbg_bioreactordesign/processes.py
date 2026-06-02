@@ -110,6 +110,8 @@ class BiRDReactorProcess(Process):
         'respiratory_quotient': {'_type': 'float', '_default': 1.0},
         # Stirred tank specific
         'impeller_power_W': {'_type': 'float', '_default': 0.0},
+        # kLa correlation: 'higbie' (penetration theory) | 'vant_riet' (stirred-tank)
+        'kla_correlation': {'_type': 'string', '_default': 'higbie'},
     }
 
     def __init__(self, config=None, core=None):
@@ -381,6 +383,7 @@ class BiRDTransportProcess(Process):
         'co2_fraction_inlet': {'_type': 'float', '_default': 0.0004},
         'mean_bubble_diameter_mm': {'_type': 'float', '_default': 3.0},
         'impeller_power_W': {'_type': 'float', '_default': 0.0},
+        'kla_correlation': {'_type': 'string', '_default': 'higbie'},
     }
 
     def inputs(self):
