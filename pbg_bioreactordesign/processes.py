@@ -110,8 +110,10 @@ class BiRDReactorProcess(Process):
         'respiratory_quotient': {'_type': 'float', '_default': 1.0},
         # Stirred tank specific
         'impeller_power_W': {'_type': 'float', '_default': 0.0},
-        # kLa correlation: 'higbie' (penetration theory) | 'vant_riet' (stirred-tank)
-        'kla_correlation': {'_type': 'string', '_default': 'higbie'},
+        # kLa correlation: 'auto' resolves by geometry (vant_riet for stirred_tank,
+        # higbie otherwise); 'higbie' (penetration theory) | 'vant_riet' (stirred-tank)
+        # force a specific correlation regardless of geometry.
+        'kla_correlation': {'_type': 'string', '_default': 'auto'},
     }
 
     def __init__(self, config=None, core=None):
@@ -251,12 +253,24 @@ class MonodCellProcess(Process):
     Conforms (in simplified flat form) to the cell-side interface contract:
     it OWNS biomass and exposes the three contract outputs —
     ``cell_mass`` (g/L), ``external_exchange_fluxes`` (per-species specific
-    rates), and ``growth_rate`` (1/h). It reads dissolved O2 from the reactor
-    and emits its O2/CO2 exchange and its biomass growth as additive deltas so
-    it composes with BiRDTransportProcess at the shared stores.
+    rates in **mmol/(gDW·h)**, the contract's standard unit shared with dFBA /
+    v2ecoli / OxidizeME), and ``growth_rate`` (1/h). It reads dissolved O2 from
+    the reactor and emits its O2/CO2 exchange and its biomass growth as additive
+    deltas so it composes with BiRDTransportProcess at the shared stores.
+
+    Biomass ``X`` (g/L) is interpreted as **gDW/L**, so the published molar
+    fluxes are apples-to-apples with a gDW-based engine substituted under the
+    contract. The Monod ``q_o2`` is mass-specific (g_O2/(gDW·h)) internally; the
+    contract field converts it to molar via the species molecular weight.
 
     Trivial by design: it is the conforming fixture that makes the contract
     concrete and the substitution target for dFBA / whole-cell engines.
+
+    NOTE: in this composite the molar ``external_exchange_fluxes`` is the contract
+    SURFACE (what a conforming engine publishes); the actual O2/CO2 coupling here
+    is the simplified mg/L delta path written directly to the shared dissolved
+    stores. The molar-flux → mg/L dC/dt coupler is the reactor-side coupler that
+    lives with the consuming engine (e.g. v2ecoli mbp-03), not in this fixture.
 
     The full contract publishes fluxes under ``agents.*.metabolism...``; this
     flat fixture exposes them directly and would adapt at a coupler boundary
@@ -304,6 +318,20 @@ class MonodCellProcess(Process):
     def _kinetics(self, C_O2):
         return monod_kinetics(C_O2, self._X, self.config)
 
+    def _exchange_fluxes(self, k):
+        """Molar specific exchange fluxes (mmol/(gDW·h)) per the cell-side contract.
+
+        Converts the mass-specific Monod ``q_o2`` (g_O2/(gDW·h)) to molar via the
+        O2 molecular weight. CO2 production is ``RQ · (molar O2 uptake)`` because
+        the respiratory quotient is itself a molar CO2/O2 ratio. Sign convention:
+        negative = uptake (O2), positive = evolution (CO2).
+        """
+        o2_molar = k['q_o2'] / SPECIES_DATA['O2']['MW'] * 1000.0  # mmol/(gDW·h)
+        return {
+            'OXYGEN-MOLECULE[p]': -o2_molar,
+            'CARBON-DIOXIDE[p]': self.config['respiratory_quotient'] * o2_molar,
+        }
+
     def initial_state(self):
         self._X = self.config['initial_biomass_gL']
         k = self._kinetics(self.config['initial_do_mgL'] if 'initial_do_mgL'
@@ -314,11 +342,7 @@ class MonodCellProcess(Process):
             'dissolved_co2': 0.0,
             'cell_mass': float(self._X),
             'growth_rate': k['mu'],
-            'external_exchange_fluxes': {
-                'OXYGEN-MOLECULE[p]': -k['q_o2'],
-                'CARBON-DIOXIDE[p]': k['q_o2'] * self.config['respiratory_quotient']
-                * (44.01 / 32.0),
-            },
+            'external_exchange_fluxes': self._exchange_fluxes(k),
             'o2_exchange_delta': 0.0,
             'co2_exchange_delta': 0.0,
         }
@@ -348,11 +372,7 @@ class MonodCellProcess(Process):
             'dissolved_co2': d_co2,
             'cell_mass': float(self._X),
             'growth_rate': k['mu'],
-            'external_exchange_fluxes': {
-                'OXYGEN-MOLECULE[p]': -k['q_o2'],
-                'CARBON-DIOXIDE[p]': k['q_o2'] * self.config['respiratory_quotient']
-                * (44.01 / 32.0),
-            },
+            'external_exchange_fluxes': self._exchange_fluxes(k),
             'o2_exchange_delta': d_o2,
             'co2_exchange_delta': d_co2,
         }
@@ -383,7 +403,9 @@ class BiRDTransportProcess(Process):
         'co2_fraction_inlet': {'_type': 'float', '_default': 0.0004},
         'mean_bubble_diameter_mm': {'_type': 'float', '_default': 3.0},
         'impeller_power_W': {'_type': 'float', '_default': 0.0},
-        'kla_correlation': {'_type': 'string', '_default': 'higbie'},
+        # 'auto' resolves by geometry (vant_riet for stirred_tank, higbie
+        # otherwise); 'higbie' | 'vant_riet' force a specific correlation.
+        'kla_correlation': {'_type': 'string', '_default': 'auto'},
     }
 
     def inputs(self):

@@ -38,16 +38,29 @@ def test_geometry_selectable_via_config():
         {**ST_CFG, 'reactor_type': 'stirred_tank'}, ST_CFG['gas_flow_rate_Lpm'])
     assert bc['alpha_gas'] != st['alpha_gas']
 
-    # The kLa correlation is selectable: Higbie vs Van't Riet on the same vessel
-    # give different kLa (the new stirred-tank form is opt-in, not a silent swap).
+    # The kLa correlation can be forced independently of geometry: Higbie vs
+    # Van't Riet on the same vessel give different kLa.
     higbie = compute_transport_state(
         {**ST_CFG, 'kla_correlation': 'higbie'}, ST_CFG['gas_flow_rate_Lpm'])
     vant_riet = compute_transport_state(
         {**ST_CFG, 'kla_correlation': 'vant_riet'}, ST_CFG['gas_flow_rate_Lpm'])
     assert vant_riet['kla_o2'] != higbie['kla_o2']
-    # Default is Higbie (preserves prior behavior).
-    default = compute_transport_state(ST_CFG, ST_CFG['gas_flow_rate_Lpm'])
-    assert default['kla_o2'] == pytest.approx(higbie['kla_o2'], rel=1e-12)
+
+    # The default 'auto' resolves the correlation FROM the geometry, so selecting
+    # a stirred tank gets the stirred-tank kLa without a second knob (the
+    # least-surprise behavior — reactor_type='stirred_tank' was previously
+    # silently served Higbie kLa). 'auto' is also the schema default.
+    st_default = compute_transport_state(ST_CFG, ST_CFG['gas_flow_rate_Lpm'])
+    assert st_default['kla_o2'] == pytest.approx(vant_riet['kla_o2'], rel=1e-12)
+    assert st_default['kla_o2'] != pytest.approx(higbie['kla_o2'], rel=1e-12)
+
+    # A non-stirred geometry resolves 'auto' to Higbie (penetration theory).
+    bc_default = compute_transport_state(
+        {**ST_CFG, 'reactor_type': 'bubble_column'}, ST_CFG['gas_flow_rate_Lpm'])
+    bc_higbie = compute_transport_state(
+        {**ST_CFG, 'reactor_type': 'bubble_column', 'kla_correlation': 'higbie'},
+        ST_CFG['gas_flow_rate_Lpm'])
+    assert bc_default['kla_o2'] == pytest.approx(bc_higbie['kla_o2'], rel=1e-12)
 
 
 # --- Behavior: kla-matches-stirred-tank-correlation ---

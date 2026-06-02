@@ -197,10 +197,15 @@ def compute_transport_state(cfg, gas_flow_Lpm):
         cfg['reactor_type'], Ug, cfg['impeller_power_W'], cfg['volume_L'])
     u_slip = slip_velocity(d_b, alpha_gas)
 
-    # kLa correlation is selectable (bird-04). Default 'higbie' (penetration
-    # theory, all geometries) preserves pre-existing behavior; 'vant_riet'
-    # selects the stirred-tank correlation grounded in P/V and u_g.
-    correlation = cfg.get('kla_correlation', 'higbie')
+    # kLa correlation is selectable (bird-04). The default 'auto' resolves by
+    # geometry — 'vant_riet' (stirred-tank correlation, grounded in P/V and u_g)
+    # for a stirred_tank, 'higbie' (penetration theory) otherwise — so selecting
+    # reactor_type='stirred_tank' gets the stirred-tank kLa without a second
+    # knob. An explicit 'higbie' | 'vant_riet' always wins over the geometry
+    # default, so a non-default correlation can still be paired with any geometry.
+    correlation = cfg.get('kla_correlation', 'auto')
+    if correlation == 'auto':
+        correlation = 'vant_riet' if cfg.get('reactor_type') == 'stirred_tank' else 'higbie'
     if correlation == 'vant_riet':
         p_per_v = cfg.get('impeller_power_W', 0.0) / max(cfg['volume_L'] / 1000.0, 1e-9)
         kla_o2 = vant_riet_kla(p_per_v, Ug)

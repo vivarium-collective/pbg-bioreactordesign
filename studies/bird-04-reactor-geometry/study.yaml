@@ -54,8 +54,9 @@ expected_behavior:
   requires:
   - variant_hook: reactor_geometry
   notes: Verified by tests/test_bird04_geometry.py::test_geometry_selectable_via_config
-    — reactor_type selects the gas-holdup correlation and kla_correlation ('higbie'|'vant_riet')
-    selects the kLa form; the default stays Higbie.
+    — reactor_type selects the gas-holdup correlation, and the kla_correlation
+    default 'auto' resolves the kLa form from geometry (vant_riet for stirred_tank,
+    higbie otherwise); 'higbie'|'vant_riet' force a specific form independent of geometry.
 - name: kla-matches-stirred-tank-correlation
   en: Under stirred-tank geometry, computed kLa matches the published correlation
     for the configured power input and superficial gas velocity within tolerance.
