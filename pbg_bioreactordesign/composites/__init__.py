@@ -24,18 +24,31 @@ import yaml
 from process_bigraph import allocate_core
 from process_bigraph.emitter import RAMEmitter
 
-from pbg_bioreactordesign.processes import BiRDReactorProcess
+from pbg_bioreactordesign.processes import (
+    BiRDReactorProcess,
+    BiRDTransportProcess,
+    MonodCellProcess,
+)
 
-# Re-export the legacy hand-coded factory.
-from pbg_bioreactordesign.composites._factory import make_reactor_document
+# Re-export the hand-coded factories (standalone reactor + coupled reactor↔cell).
+from pbg_bioreactordesign.composites._factory import (
+    make_reactor_document,
+    make_coupled_document,
+)
 
 
 def register_bioreactordesign(core=None):
-    """Return a core with BiRDReactorProcess, the RAM emitter, and the
-    bioreactor Visualization registered."""
+    """Return a core with the BiRD processes, the RAM emitter, and the
+    bioreactor Visualization registered.
+
+    Registers all three processes so both the standalone reactor specs and the
+    coupled reactor↔cell spec (BiRDTransportProcess + MonodCellProcess) build
+    and are discoverable by the dashboard catalog."""
     if core is None:
         core = allocate_core()
     core.register_link('BiRDReactorProcess', BiRDReactorProcess)
+    core.register_link('BiRDTransportProcess', BiRDTransportProcess)
+    core.register_link('MonodCellProcess', MonodCellProcess)
     core.register_link('ram-emitter', RAMEmitter)
     # Register Visualization Steps so composites can wire them by name.
     from pbg_bioreactordesign.visualizations import BioreactorPlots
@@ -127,6 +140,7 @@ def build_composite(name: str, *, overrides: dict | None = None, core=None):
 
 __all__ = [
     'make_reactor_document',
+    'make_coupled_document',
     'register_bioreactordesign',
     'list_composite_specs',
     'load_composite_spec',

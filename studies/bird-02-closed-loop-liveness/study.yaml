@@ -1,0 +1,82 @@
+schema_version: 3
+name: bird-02-closed-loop-liveness
+status: planned
+question: |
+  When BiRDTransportProcess is coupled to the Phase-1 MonodCellProcess at a
+  static high biomass density, does the reactor→cell feedback fire —
+  dissolved O2 dropping below saturation as consumption outpaces transport —
+  with O2 mass balance closing across cell and reactor contributions?
+hypothesis: |
+  At an impactful biomass density, steady-state dissolved O2 settles below
+  saturation, d[O2]/dt equals reactor transport minus cell consumption at
+  every step, and removing the biomass input returns O2 to saturation —
+  confirming a live, bidirectional loop.
+objective: |
+  Compose BiRDTransportProcess with MonodCellProcess at a constant high
+  biomass density and measure dissolved O2 and the O2 balance to determine
+  that the closed loop is live, not merely wired.
+description: |
+  This is the integration test the single-process reactor cannot provide:
+  the reactor→cell direction only fires when biomass is dense enough to
+  perturb reactor state. The Phase-1 MonodCellProcess supplies biomass and
+  an O2 consumption flux under the cell-side contract; a constant scale
+  factor on a representative biomass is sufficient here — no growth dynamics
+  are needed to establish liveness.
+
+  Distinct from bird-01's per-edge unit checks, this study exercises the
+  composed loop end-to-end and asserts mass-balance closure across the two
+  processes' contributions at the shared dissolved-O2 store.
+parent_studies:
+  - {study: bird-01-transport-process, condition: tests-passed}
+# Behavior tests in the structured (given, measure, expect) grammar.
+# STATUS: the coupled_reactor_cell composite has landed (Phase-1, commit
+# dc3714f) and all three behaviors are verified by tests/test_bird02_liveness.py.
+# They remain status: stub here because the dashboard measure grammar can't yet
+# express these rate/balance assertions over the flat emitter output (see
+# pbg-superpowers issue #96) — the pytest suite is the authoritative verifier.
+expected_behavior:
+  - name: dissolved-o2-drops-below-saturation-at-high-biomass
+    en: "At a high biomass density, steady-state dissolved O2 settles below the
+         saturation concentration — consumption outpacing transport pulls DO down,
+         showing the reactor→cell direction fires."
+    given: {run: baseline, window: second_half}
+    measure: {kind: listener_path, path: "dissolved_o2", reduce: median}
+    expect: {op: in_range, low: 0.0, high: 8.0}
+    status: stub
+    requires: [{listener: dissolved_o2}, {variant_hook: biomass_density}]
+    notes: "Verified by tests/test_bird02_liveness.py::test_do_drops_below_saturation_at_high_biomass
+            — at 5 g/L (growth off), steady-state DO settles below C*_O2 and stays non-negative."
+  - name: o2-mass-balance-closes
+    en: "d[O2]/dt equals reactor transport minus cell consumption at every step
+         within tolerance — the two processes' deltas aggregate at the shared store
+         without double-counting or leakage."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "o2_balance_residual", reduce: series}
+    expect: {op: in_range, low: -1.0e-6, high: 1.0e-6}
+    status: stub
+    requires: [{listener: o2_balance_residual}]
+    notes: "Verified by tests/test_bird02_liveness.py::test_o2_mass_balance_closes_process_math
+            (d[O2] == transport − consumption, computed independently) and
+            ::test_o2_mass_balance_closes_in_composite (the shared store aggregates both deltas).
+            The cell emits o2_exchange_delta so the balance is observable."
+  - name: dissolved-o2-recovers-when-biomass-removed
+    en: "Setting the biomass input to zero returns dissolved O2 to saturation,
+         confirming the feedback is bidirectional and not a fixed offset."
+    given: {run: baseline, window: second_half}
+    measure: {kind: listener_path, path: "dissolved_o2", reduce: median}
+    expect: {op: in_range, low: 7.0, high: 8.5}
+    status: stub
+    requires: [{variant_hook: biomass_input_zero}, {listener: dissolved_o2}]
+    notes: "Verified by tests/test_bird02_liveness.py::test_do_recovers_when_biomass_removed
+            — with negligible biomass, transport restores depleted DO to ~C*_O2 (8.21 mg/L)."
+baseline:
+  - name: coupled-reactor-cell
+    composite: pbg_bioreactordesign.composites.coupled_reactor_cell
+    params: {}
+variants: []
+interventions: []
+runs: []
+# NOTE: pbg_bioreactordesign.coupled_reactor_cell does not exist yet — it is the
+# BiRDTransportProcess + MonodCellProcess composition built in Phase 1 (bird-01).
+# This study is gated on bird-01 (parent_studies: tests-passed), so the baseline
+# resolves once Phase-1 lands. Named here so the spec documents intent and renders.

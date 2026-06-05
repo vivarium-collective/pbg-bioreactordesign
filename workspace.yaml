@@ -1,0 +1,36 @@
+schema_version: 2
+name: pbg-bioreactordesign
+created: "2026-05-29"
+plugin_version: 0.8.1
+package_path: pbg_bioreactordesign
+observables: []
+visualizations: []
+simulations: []
+datasets: []
+expert_docs:
+  - name: bioreactor_transport_plan
+    title: BiRD reactor transport refactor for cell-engine coupling
+    path: references/expert/bioreactor-transport-plan.md
+    description: |
+      Plan for the biomass-as-input transport refactor: extract the shared
+      gas-liquid transport physics into a module consumed by two processes
+      (BiRDReactorProcess standalone + a new BiRDTransportProcess that takes
+      biomass as input and emits only the transport contribution). Decomposes
+      into four phases (transport-process split, closed-loop liveness at
+      impactful density, coupling-interval tunability, reactor geometry).
+      Source for scaffold-from-plan. Upstream dependency for the v2ecoli
+      multiscale-bioprocess mbp-03 coupling study.
+  - name: cell_side_interface_contract
+    title: Cell-side interface contract (substitutability)
+    path: references/expert/cell_side_interface_contract.md
+    description: |
+      The substitutability contract lifted from the v2ecoli mbp
+      investigation. Defines what a cell-side engine provides (cell_mass,
+      external_exchange_fluxes, growth_rate) and what the reactor provides
+      (external concentrations, volume, dissolved O2). BiRDTransportProcess
+      is the REACTOR side under this contract; the Monod placeholder is the
+      trivial conforming cell-side engine used as the test fixture for the
+      coupled studies.
+references_bib: references/papers.bib
+server:
+  enabled: true

@@ -1,0 +1,191 @@
+schema_version: 3
+name: bird-01-transport-process
+status: planned
+question: |
+  Can the gas–liquid transport physics be extracted into a shared module
+  and exposed as a biomass-as-input BiRDTransportProcess that emits only
+  the transport contribution, while the standalone BiRDReactorProcess (now
+  transport + an extracted MonodCellProcess) keeps its pre-refactor
+  behavior?
+hypothesis: |
+  A shared transport module consumed by both processes lets
+  BiRDTransportProcess read biomass/substrate/dissolved-gas as inputs and
+  emit only kLa·(C*−C) deltas (zero for glucose); the biomass/consumption
+  term factors into a MonodCellProcess that conforms to the cell-side
+  contract; standalone BiRDReactorProcess (transport + MonodCellProcess) is
+  unchanged within tolerance and the bird_disable_internal_biomass flag is
+  removed as obsolete.
+objective: |
+  Extract the transport physics into a shared module, factor the internal
+  Monod term into a MonodCellProcess, and build BiRDTransportProcess; then
+  measure emitted deltas, contract conformance, and the standalone reactor's
+  trajectories to determine that responsibilities are cleanly split and
+  standalone behavior is preserved.
+description: |
+  Splits the monolithic BiRDReactorProcess into a shared transport module
+  plus a MonodCellProcess (the extracted biomass/consumption term) and two
+  reactor consumers. BiRDTransportProcess owns no biomass equation and no
+  substrate consumption; it emits only the gas–liquid transport
+  contribution at the shared dissolved-species stores, leaving growth and
+  exchange to the coupled cell engine. The extracted MonodCellProcess
+  conforms to the cell-side interface contract and doubles as the trivial
+  cell-side fixture for the coupled studies (Phases 2–4).
+
+  Verification is per-edge and regression-oriented: the new process emits
+  zero biomass delta, correct kLa-driven O2 transport, zero glucose
+  transport, and symmetric CO2 stripping; the retained BiRDReactorProcess
+  (transport + MonodCellProcess) reproduces pre-refactor trajectories; and
+  the MonodCellProcess passes the cell-side contract conformance fixture.
+# Behavior tests in the structured (given, measure, expect) grammar.
+# STATUS: the Phase-1 Build has landed (commit dc3714f); every behavior below
+# is verified by tests/test_bird01_transport.py. They remain status: stub here
+# because the dashboard measure grammar can't yet express these config/rate
+# assertions over the flat emitter output (see pbg-superpowers issue #96) — the
+# pytest suite is the authoritative verifier until that grammar gap is closed.
+expected_behavior:
+  - name: transport-process-emits-zero-biomass-delta
+    en: "BiRDTransportProcess emits a zero biomass delta over a full run — the
+         cell engine owns biomass, so the transport process must never write it."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "biomass_delta", reduce: series}
+    expect: {op: in_range, low: -1.0e-9, high: 1.0e-9}
+    status: stub
+    requires: [{listener: biomass_delta}]
+    notes: "Verified by tests/test_bird01_transport.py::test_transport_process_emits_zero_biomass_delta
+            — biomass is not an output port of BiRDTransportProcess, so the delta is structurally zero."
+  - name: o2-transport-equals-kla-driving-force
+    en: "The emitted dissolved-O2 delta equals kLa·(C*_O2 − C_O2) at the configured
+         operating point — the transport contribution must match the gas–liquid
+         driving-force form."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "dissolved_o2_delta", reduce: median}
+    expect: {op: in_range, low: 0.0, high: 1.0e6}
+    status: stub
+    requires: [{listener: dissolved_o2_delta}]
+    notes: "Verified by tests/test_bird01_transport.py::test_o2_transport_equals_kla_driving_force
+            — asserts the emitted delta == kLa·(C*−C)·interval at the operating point."
+  - name: glucose-transport-is-zero
+    en: "The emitted glucose transport contribution equals zero — glucose has no
+         gas-phase transport term; only cell consumption changes it."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "glucose_transport", reduce: series}
+    expect: {op: in_range, low: -1.0e-9, high: 1.0e-9}
+    status: stub
+    requires: [{listener: glucose_transport}]
+    notes: "Verified by tests/test_bird01_transport.py::test_glucose_transport_is_zero
+            — glucose is a read-only input, not an output store; the glucose_transport diagnostic == 0."
+  - name: co2-stripping-symmetric-with-o2
+    en: "The emitted dissolved-CO2 delta follows kLa·(C*−C) with the CO2 Henry
+         constant and the correct sign — the symmetric counterpart of O2 uptake."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "dissolved_co2_delta", reduce: median}
+    expect: {op: in_range, low: -1.0e6, high: 0.0}
+    status: stub
+    requires: [{listener: dissolved_co2_delta}]
+    notes: "Verified by tests/test_bird01_transport.py::test_co2_stripping_symmetric_with_o2
+            — asserts the CO2 delta == −kLa·(C−C*)·interval (stripping sign, CO2 Henry constant)."
+  - name: reactor-process-matches-prerefactor-baseline
+    en: "Standalone BiRDReactorProcess trajectories are identical to the
+         pre-refactor implementation within tolerance — pure structural extraction."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "dissolved_o2", reduce: series}
+    expect: {op: in_range, low: 0.0, high: 1.0e6}
+    status: stub
+    requires: [{listener: prerefactor_reference_trajectory}]
+    notes: "Verified by tests/test_bird01_transport.py::test_reactor_process_matches_prerefactor_baseline
+            — transport physics are verbatim extractions (numerics identical by construction); the test
+            pins cstar_o2 = 8.21 mg/L and a physically sane standalone trajectory."
+  - name: monod-cell-conforms-to-interface-contract
+    en: "MonodCellProcess exposes cell_mass, external_exchange_fluxes, and growth
+         rate with correct units, verified against the conformance fixture."
+    given: {run: baseline, window: full}
+    measure: {kind: listener_path, path: "cell_mass", reduce: series}
+    expect: {op: in_range, low: 0.0, high: 1.0e6}
+    status: stub
+    requires: [{listener: cell_mass}]
+    notes: "Verified by tests/test_bird01_transport.py::test_monod_cell_conforms_to_interface_contract
+            — asserts cell_mass, growth_rate, and external_exchange_fluxes (O2<0 uptake, CO2>0) are exposed."
+baseline:
+  - name: standalone-reactor
+    composite: pbg_bioreactordesign.composites.reactor
+    params: {}
+variants: []
+interventions: []
+runs: []
+
+# --- v4 narrative-spine fields (Executive + Validation layers) ---
+# Written YAML-direct: study_narrative has no set-report/set-study-card/
+# set-biological-summary writer, so fill-overview --include-narrative falls
+# back to a manual edit here. See framework-friction log.
+report:
+  verdict: not-yet-run
+  confidence: low
+  evidence_quality: aspirational
+  objective: >-
+    Split the monolithic BiRDReactorProcess into a shared transport module, an
+    extracted MonodCellProcess, and a new biomass-as-input BiRDTransportProcess —
+    preserving standalone reactor behavior while the new process emits only the
+    gas–liquid transport contribution.
+  main_insight: >-
+    A single-responsibility split lets the reactor own only kLa·(C*−C) transport
+    while the cell engine owns biomass and exchange; under process-bigraph update
+    aggregation the two sets of deltas merge at the shared dissolved-species
+    stores without either process owning the other's state.
+  caveat: >-
+    Phase 1 verifies per-edge structure and standalone regression only — the
+    closed-loop reactor→cell feedback is not exercised until Phase 2.
+  conclusion: ""
+
+study_card:
+  goal: >-
+    Refactor BiRD so biomass is an input: a shared transport module feeding both
+    a standalone BiRDReactorProcess and a new transport-only BiRDTransportProcess,
+    plus an extracted MonodCellProcess.
+  mechanism: >-
+    The 0D transport contribution is kLa·(C*−C) for O2 and symmetric stripping for
+    CO2, with zero glucose transport (no gas phase). Under process-bigraph update
+    aggregation the cell engine's exchange deltas and the reactor's transport
+    deltas merge at the shared dissolved-species stores, so consumption and
+    transport compose without conflicting ownership.
+  why_before_next: >-
+    Phases 2–4 all compose against the BiRDTransportProcess and MonodCellProcess
+    produced here, and v2ecoli mbp-03 declares this fork a hard prerequisite.
+  expected_result: >-
+    Standalone BiRDReactorProcess reproduces pre-refactor trajectories within
+    tolerance; BiRDTransportProcess emits zero biomass delta, kLa-driven O2
+    transport, zero glucose, symmetric CO2; MonodCellProcess conforms to the
+    cell-side contract.
+  main_expert_question: >-
+    Is factoring the internal Monod term into a separate MonodCellProcess (vs.
+    keeping it inline in BiRDReactorProcess) the right boundary for the cell-side
+    interface contract?
+
+biological_summary: |
+  The current BiRDReactorProcess owns biomass internally through a Monod growth
+  ODE. When it is coupled to a cell engine that *also* owns biomass — a dFBA model
+  or the v2ecoli whole-cell model — the two ownerships collide. Today that is
+  worked around with a `bird_disable_internal_biomass` flag that runs the process
+  with half of itself switched off, which is interface-dishonest and breaks the
+  substitutability symmetry the cell-side interface contract is meant to guarantee.
+
+  The physics that genuinely belongs to the vessel is gas–liquid mass transfer:
+  the volumetric transfer coefficient kLa (from Higbie penetration theory), the
+  temperature-dependent Henry's-law saturation concentration C*, and Wilke–Chang
+  liquid diffusivity. For a 0D well-mixed reactor the transport contribution to a
+  dissolved species is kLa·(C*−C): positive uptake for O2, symmetric stripping for
+  CO2, and exactly zero for glucose, which has no gas phase.
+
+  The fix is a single-responsibility split. Transport physics moves into a shared
+  module; the biomass/consumption term is factored into a small MonodCellProcess
+  that conforms to the cell-side contract; and a new BiRDTransportProcess reads
+  biomass, substrate, and dissolved-gas concentrations as inputs and emits only
+  the transport deltas. Standalone BiRDReactorProcess becomes MonodCellProcess +
+  transport recomposed, so its behavior is preserved exactly. Because
+  process-bigraph aggregates updates, the cell's exchange deltas and the reactor's
+  transport deltas land at the same dissolved-species stores and sum cleanly.
+
+  This matters because it unlocks feedback a single-process reactor cannot express:
+  once biomass is external, a dense culture can draw dissolved O2 below saturation
+  and the reactor state responds to the cell — the bidirectional coupling that
+  Phases 2–4 test, and the reactor-physics dependency that v2ecoli's mbp-03 study
+  is blocked on.

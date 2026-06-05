@@ -1,0 +1,295 @@
+[
+  {
+    "name": "pbg-bioreactordesign",
+    "description": "Process-bigraph wrapper for BioReactorDesign (BiRD) bioreactor simulation",
+    "source": "https://github.com/vivarium-collective/pbg-bioreactordesign.git",
+    "ref": "main",
+    "package": "pbg_bioreactordesign",
+    "homepage": "https://github.com/vivarium-collective/pbg-bioreactordesign",
+    "tags": [
+      "bioreactor",
+      "mass-transfer"
+    ]
+  },
+  {
+    "name": "pbg-caspule",
+    "description": "Process-bigraph wrapper for CASPULE (a LAMMPS variant with dynamic bond formation/breaking)",
+    "source": "https://github.com/vivarium-collective/pbg-caspule.git",
+    "ref": "main",
+    "package": "pbg_caspule",
+    "homepage": "https://github.com/vivarium-collective/pbg-caspule",
+    "tags": [
+      "lammps",
+      "molecular-dynamics",
+      "polymers"
+    ],
+    "system_dependencies": {
+      "checks": [
+        {
+          "name": "open-mpi-4",
+          "description": "OpenMPI 4.x runtime — the lammps PyPI wheel was built against libmpi.12 (OpenMPI 4 ABI)",
+          "import_check": "from ctypes import CDLL; CDLL('libmpi.12.dylib')",
+          "install": {
+            "darwin": {
+              "manager": "brew",
+              "commands": ["brew install open-mpi@4"],
+              "notes": "Default open-mpi 5.x is ABI-incompatible with the lammps wheel; the @4 formula provides libmpi.12"
+            },
+            "linux": {
+              "manager": "apt",
+              "commands": ["sudo apt install -y libopenmpi3"]
+            }
+          }
+        },
+        {
+          "name": "lammps-importable",
+          "description": "Validate that the lammps Python wheel can dlopen its native library",
+          "import_check": "from lammps import lammps; l=lammps(cmdargs=['-screen','none','-log','none','-nocite']); l.close()",
+          "install": null,
+          "notes": "If this fails after open-mpi-4 is installed, the lammps wheel may need rebuilding from source: pip install --no-binary lammps lammps"
+        }
+      ]
+    }
+  },
+  {
+    "name": "pbg-cellpack",
+    "description": "Process-bigraph wrapper for cellPACK \u2014 mesoscale molecular packing (recipes \u2192 3D molecular assemblies)",
+    "source": "https://github.com/vivarium-collective/pbg-cellpack.git",
+    "ref": "main",
+    "package": "pbg_cellpack",
+    "homepage": "https://github.com/vivarium-collective/pbg-cellpack",
+    "tags": [
+      "mesoscale",
+      "structure",
+      "packing",
+      "geometry"
+    ]
+  },
+  {
+    "name": "pbg-comets",
+    "description": "Process-bigraph wrapper for COMETS (dynamic FBA + 2D spatial microbial ecosystems)",
+    "source": "https://github.com/vivarium-collective/pbg-comets.git",
+    "ref": "main",
+    "package": "pbg_comets",
+    "homepage": "https://github.com/vivarium-collective/pbg-comets",
+    "tags": [
+      "microbial",
+      "spatial",
+      "fba",
+      "metabolism",
+      "multi-cell"
+    ]
+  },
+  {
+    "name": "pbg-composite-nfsim-caspule",
+    "description": "Process-bigraph composite: CASPULE bond-aware MD coupled to NFSim rule-based kinetics through a configurable observable detector that converts spatial bond clusters into non-spatial species counts.",
+    "source": "https://github.com/vivarium-collective/pbg-composite-nfsim-caspule.git",
+    "ref": "main",
+    "package": "pbg_composite_nfsim_caspule",
+    "homepage": "https://github.com/vivarium-collective/pbg-composite-nfsim-caspule",
+    "tags": [
+      "spatial",
+      "rule-based",
+      "kinetics",
+      "md",
+      "composite"
+    ]
+  },
+  {
+    "name": "pbg-compucell3d",
+    "description": "Process-bigraph wrapper for the CompuCell3D multicellular simulation environment",
+    "source": "https://github.com/vivarium-collective/pbg-compucell3d.git",
+    "ref": "main",
+    "package": "pbg_compucell3d",
+    "homepage": "https://github.com/vivarium-collective/pbg-compucell3d",
+    "tags": [
+      "multicellular",
+      "agent-based",
+      "cells",
+      "cellular-potts"
+    ]
+  },
+  {
+    "name": "pbg-lammps",
+    "description": "Process-bigraph wrapper for the LAMMPS molecular dynamics simulator",
+    "source": "https://github.com/vivarium-collective/pbg-lammps.git",
+    "ref": "main",
+    "package": "pbg_lammps",
+    "homepage": "https://github.com/vivarium-collective/pbg-lammps",
+    "tags": [
+      "lammps",
+      "md",
+      "molecular-dynamics"
+    ]
+  },
+  {
+    "name": "pbg-martini",
+    "description": "Process-bigraph wrapper for the Martini coarse-grained force field \u2014 membrane systems, micelles, protein-lipid complexes, and vesicles",
+    "source": "https://github.com/vivarium-collective/pbg-martini.git",
+    "ref": "main",
+    "package": "pbg_martini",
+    "homepage": "https://github.com/vivarium-collective/pbg-martini",
+    "tags": [
+      "membrane",
+      "coarse-grained",
+      "molecular-dynamics"
+    ]
+  },
+  {
+    "name": "pbg-medyan",
+    "description": "Process-bigraph wrapper for the MEDYAN cytoskeleton simulator: pure-Python re-implementation + a subprocess-driven bridge to the real MEDYAN C++ binary (with checkpoint-restart and HDF5 vesicle support).",
+    "source": "https://github.com/vivarium-collective/pbg-medyan.git",
+    "ref": "main",
+    "package": "pbg_medyan",
+    "homepage": "https://github.com/vivarium-collective/pbg-medyan",
+    "tags": [
+      "cytoskeleton",
+      "membrane",
+      "polymers",
+      "mechanics"
+    ]
+  },
+  {
+    "name": "pbg-mem3dg",
+    "description": "Process-bigraph wrapper for Mem3DG membrane mechanics simulator",
+    "source": "https://github.com/vivarium-collective/pbg-mem3dg.git",
+    "ref": "main",
+    "package": "pbg_mem3dg",
+    "homepage": "https://github.com/vivarium-collective/pbg-mem3dg",
+    "tags": [
+      "membrane",
+      "membranes",
+      "mechanics",
+      "geometry"
+    ]
+  },
+  {
+    "name": "pbg-minimal-cell-4dwcm",
+    "description": "Process-bigraph wrapper for a minimal-cell whole-cell model (4D-WCM)",
+    "source": "https://github.com/vivarium-collective/pbg-minimal-cell-4dwcm.git",
+    "ref": "main",
+    "package": "pbg_minimal_cell_4dwcm",
+    "homepage": "https://github.com/vivarium-collective/pbg-minimal-cell-4dwcm",
+    "tags": [
+      "whole-cell",
+      "cells"
+    ]
+  },
+  {
+    "name": "pbg-nfsim",
+    "description": "A process-bigraph wrapper for BioNetGen/NFSim",
+    "source": "https://github.com/vivarium-collective/pbg-nfsim.git",
+    "ref": "main",
+    "package": "pbg_nfsim",
+    "homepage": "https://github.com/vivarium-collective/pbg-nfsim",
+    "tags": [
+      "rule-based",
+      "kinetics"
+    ]
+  },
+  {
+    "name": "pbg-physicell",
+    "description": "Process-bigraph wrapper for PhysiCell agent-based multicellular simulation",
+    "source": "https://github.com/vivarium-collective/pbg-physicell.git",
+    "ref": "main",
+    "package": "pbg_physicell",
+    "homepage": "https://github.com/vivarium-collective/pbg-physicell",
+    "tags": [
+      "agent-based",
+      "cells",
+      "tissue"
+    ]
+  },
+  {
+    "name": "pbg-readdy",
+    "description": "Process-bigraph wrapper for the ReaDDy particle-based reaction-diffusion simulator",
+    "source": "https://github.com/vivarium-collective/pbg-readdy.git",
+    "ref": "main",
+    "package": "pbg_readdy",
+    "homepage": "https://github.com/vivarium-collective/pbg-readdy",
+    "tags": [
+      "particle",
+      "particles",
+      "reaction-diffusion"
+    ]
+  },
+  {
+    "name": "pbg-smoldyn",
+    "description": "Process-bigraph wrapper for the Smoldyn particle-based spatial stochastic simulator",
+    "source": "https://github.com/vivarium-collective/pbg-smoldyn.git",
+    "ref": "main",
+    "package": "pbg_smoldyn",
+    "homepage": "https://github.com/vivarium-collective/pbg-smoldyn",
+    "tags": [
+      "spatial",
+      "particle",
+      "particles",
+      "stochastic",
+      "reaction-diffusion"
+    ]
+  },
+  {
+    "name": "pbg-tellurium",
+    "description": "Process-bigraph wrapper for Tellurium / libroadrunner SBML & Antimony simulation",
+    "source": "https://github.com/vivarium-collective/pbg-tellurium.git",
+    "ref": "main",
+    "package": "pbg_tellurium",
+    "homepage": "https://github.com/vivarium-collective/pbg-tellurium",
+    "tags": [
+      "sbml",
+      "systems-biology",
+      "ode"
+    ]
+  },
+  {
+    "name": "pbg-vcell-fvsolver",
+    "description": "process-bigraph wrapper around pyvcell / pyvcell-fvsolver \u2014 VCell's finite-volume 3D reaction-diffusion PDE solver as a PBG Process",
+    "source": "https://github.com/vivarium-collective/pbg-vcell-fvsolver.git",
+    "ref": "main",
+    "package": "pbg_vcell_fvsolver",
+    "homepage": "https://github.com/vivarium-collective/pbg-vcell-fvsolver",
+    "tags": [
+      "reaction-diffusion",
+      "pde",
+      "vcell"
+    ]
+  },
+  {
+    "name": "pbg-yalla",
+    "description": "Process-bigraph wrapper for a NumPy port of ya||a's pair-wise agent-based morphogenesis simulator",
+    "source": "https://github.com/vivarium-collective/pbg-yalla.git",
+    "ref": "main",
+    "package": "pbg_yalla",
+    "homepage": "https://github.com/vivarium-collective/pbg-yalla",
+    "tags": [
+      "agent-based",
+      "morphogenesis",
+      "cells",
+      "mechanics"
+    ]
+  },
+  {
+    "name": "spatio-flux",
+    "description": "spatio-temporal microbial simulations with Vivarium 2.0",
+    "source": "https://github.com/vivarium-collective/spatio-flux.git",
+    "ref": "main",
+    "package": "spatio_flux",
+    "homepage": "https://github.com/vivarium-collective/spatio-flux",
+    "tags": [
+      "microbial",
+      "metabolism"
+    ]
+  },
+  {
+    "name": "v2ecoli",
+    "description": "Whole-cell E. coli model in Vivarium 2",
+    "source": "https://github.com/vivarium-collective/v2ecoli.git",
+    "ref": "main",
+    "package": "v2ecoli",
+    "homepage": "https://github.com/vivarium-collective/v2ecoli",
+    "tags": [
+      "whole-cell",
+      "ecoli"
+    ]
+  }
+]
