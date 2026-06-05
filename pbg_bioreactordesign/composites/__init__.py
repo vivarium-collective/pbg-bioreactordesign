@@ -1,261 +1,148 @@
-"""Pre-built composite document factories for BiRD bioreactor simulations.
+"""BiRD bioreactor composite documents + composite-spec discovery.
 
-Provides make_reactor_document() which returns a ready-to-run PBG document
-with a BiRDReactorProcess wired to stores and a RAM emitter for time-series
-data collection.
+Two flavors of composite construction live in this package:
+
+1. **Hand-coded factory** — `make_reactor_document(...)` builds a PBG
+   state-dict programmatically for callers that want full control over
+   the reactor wiring. Re-exported from the legacy single-file API.
+
+2. **Declarative `*.composite.yaml`** — sibling files in this directory
+   follow the pbg-superpowers composite-spec convention.
+   `build_composite()` loads one by name and instantiates
+   `process_bigraph.Composite` with parameter substitution. The
+   dashboard's composite explorer discovers these automatically once
+   the package is installed in a workspace.
+
+Both flavors are equivalent — pick the one that fits your use case.
 """
+from __future__ import annotations
+import re
+from pathlib import Path
+from typing import Any
+
+import yaml
+from process_bigraph import allocate_core
+from process_bigraph.emitter import RAMEmitter
+
+from pbg_bioreactordesign.processes import (
+    BiRDReactorProcess,
+    BiRDTransportProcess,
+    MonodCellProcess,
+)
+
+# Re-export the hand-coded factories (standalone reactor + coupled reactor↔cell).
+from pbg_bioreactordesign.composites._factory import (
+    make_reactor_document,
+    make_coupled_document,
+)
 
 
-def make_reactor_document(
-    reactor_type='bubble_column',
-    volume_L=20.0,
-    diameter_m=0.2,
-    liquid_height_m=0.5,
-    gas_flow_rate_Lpm=1.0,
-    temperature_K=298.15,
-    pressure_atm=1.0,
-    o2_fraction_inlet=0.21,
-    co2_fraction_inlet=0.0004,
-    mean_bubble_diameter_mm=3.0,
-    initial_biomass_gL=0.5,
-    initial_do_mgL=8.0,
-    initial_dco2_mgL=0.5,
-    max_growth_rate_per_h=0.4,
-    ks_oxygen_mgL=0.2,
-    yield_biomass_o2=1.2,
-    maintenance_coeff_per_h=0.01,
-    respiratory_quotient=1.0,
-    impeller_power_W=0.0,
-    interval=1.0,
-):
-    """Build a composite document for a bioreactor simulation.
+def register_bioreactordesign(core=None):
+    """Return a core with the BiRD processes, the RAM emitter, and the
+    bioreactor Visualization registered.
 
-    Returns a dict suitable for ``Composite({'state': doc}, core=core)``.
+    Registers all three processes so both the standalone reactor specs and the
+    coupled reactor↔cell spec (BiRDTransportProcess + MonodCellProcess) build
+    and are discoverable by the dashboard catalog."""
+    if core is None:
+        core = allocate_core()
+    core.register_link('BiRDReactorProcess', BiRDReactorProcess)
+    core.register_link('BiRDTransportProcess', BiRDTransportProcess)
+    core.register_link('MonodCellProcess', MonodCellProcess)
+    core.register_link('ram-emitter', RAMEmitter)
+    # Register Visualization Steps so composites can wire them by name.
+    from pbg_bioreactordesign.visualizations import BioreactorPlots
+    core.register_link('BioreactorPlots', BioreactorPlots)
+    return core
 
-    Args:
-        reactor_type: 'bubble_column', 'stirred_tank', or 'airlift'
-        volume_L: Reactor liquid volume (L)
-        diameter_m: Vessel inner diameter (m)
-        liquid_height_m: Liquid height (m)
-        gas_flow_rate_Lpm: Volumetric gas flow rate (L/min)
-        temperature_K: Operating temperature (K)
-        pressure_atm: Headspace pressure (atm)
-        interval: Time between process updates (hours)
-        ... (see BiRDReactorProcess config_schema for others)
 
-    Returns:
-        dict: PBG composite document with reactor, stores, and emitter.
+# ---------------------------------------------------------------------------
+# Declarative composite-spec loader (*.composite.yaml)
+# ---------------------------------------------------------------------------
+
+_COMPOSITES_DIR = Path(__file__).parent
+
+_FULL_PLACEHOLDER = re.compile(r"^\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}$")
+_INLINE_PLACEHOLDER = re.compile(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
+
+
+def _cast(value: Any, declared_type: str | None) -> Any:
+    if declared_type is None:
+        return value
+    if declared_type == "float":
+        return float(value)
+    if declared_type == "int":
+        return int(value)
+    if declared_type in ("string", "str"):
+        return str(value)
+    if declared_type == "bool":
+        if isinstance(value, str):
+            return value.strip().lower() in ("true", "1", "yes")
+        return bool(value)
+    return value
+
+
+def _substitute(state: Any, params: dict, overrides: dict) -> Any:
+    if isinstance(state, dict):
+        return {k: _substitute(v, params, overrides) for k, v in state.items()}
+    if isinstance(state, list):
+        return [_substitute(v, params, overrides) for v in state]
+    if isinstance(state, str):
+        m = _FULL_PLACEHOLDER.match(state)
+        if m:
+            pname = m.group(1)
+            pdef = params.get(pname, {})
+            raw = overrides.get(pname, pdef.get("default"))
+            return _cast(raw, pdef.get("type"))
+        if _INLINE_PLACEHOLDER.search(state):
+            return _INLINE_PLACEHOLDER.sub(
+                lambda mm: str(overrides.get(mm.group(1), params.get(mm.group(1), {}).get("default", ""))),
+                state,
+            )
+    return state
+
+
+def list_composite_specs() -> list[str]:
+    """Return short names of every `*.composite.yaml` shipped in this package."""
+    out: list[str] = []
+    for path in sorted(_COMPOSITES_DIR.glob("*.composite.yaml")):
+        out.append(path.name[: -len(".composite.yaml")])
+    return out
+
+
+def load_composite_spec(name: str) -> dict:
+    """Load and parse a named composite spec. `name` is the stem (no suffix)."""
+    path = _COMPOSITES_DIR / f"{name}.composite.yaml"
+    if not path.is_file():
+        raise FileNotFoundError(f"composite spec not found: {path}")
+    return yaml.safe_load(path.read_text())
+
+
+def build_composite(name: str, *, overrides: dict | None = None, core=None):
+    """Load a *.composite.yaml by name and instantiate process_bigraph.Composite.
+
+    overrides: parameter overrides (keys must match spec.parameters)
+    core:      optional pre-built core; otherwise register_bioreactordesign() is used
     """
-    config = {
-        'reactor_type': reactor_type,
-        'volume_L': volume_L,
-        'diameter_m': diameter_m,
-        'liquid_height_m': liquid_height_m,
-        'gas_flow_rate_Lpm': gas_flow_rate_Lpm,
-        'temperature_K': temperature_K,
-        'pressure_atm': pressure_atm,
-        'o2_fraction_inlet': o2_fraction_inlet,
-        'co2_fraction_inlet': co2_fraction_inlet,
-        'mean_bubble_diameter_mm': mean_bubble_diameter_mm,
-        'initial_biomass_gL': initial_biomass_gL,
-        'initial_do_mgL': initial_do_mgL,
-        'initial_dco2_mgL': initial_dco2_mgL,
-        'max_growth_rate_per_h': max_growth_rate_per_h,
-        'ks_oxygen_mgL': ks_oxygen_mgL,
-        'yield_biomass_o2': yield_biomass_o2,
-        'maintenance_coeff_per_h': maintenance_coeff_per_h,
-        'respiratory_quotient': respiratory_quotient,
-        'impeller_power_W': impeller_power_W,
-    }
+    from process_bigraph import Composite
 
-    output_ports = [
-        'dissolved_o2', 'dissolved_co2', 'biomass', 'gas_holdup',
-        'kla_o2', 'kla_co2', 'bubble_diameter_mm', 'o2_saturation',
-        'co2_saturation', 'specific_growth_rate', 'o2_uptake_rate',
-        'co2_evolution_rate', 'superficial_gas_velocity',
-    ]
+    spec = load_composite_spec(name)
+    if not isinstance(spec, dict) or "state" not in spec or "name" not in spec:
+        raise ValueError(f"composite '{name}' missing required keys (name, state)")
 
-    return {
-        'reactor': {
-            '_type': 'process',
-            'address': 'local:BiRDReactorProcess',
-            'config': config,
-            'interval': interval,
-            'inputs': {
-                'gas_flow_rate_Lpm': ['stores', 'gas_flow_rate_Lpm'],
-            },
-            'outputs': {
-                port: ['stores', port] for port in output_ports
-            },
-        },
-        'stores': {
-            'gas_flow_rate_Lpm': gas_flow_rate_Lpm,
-        },
-        'emitter': {
-            '_type': 'step',
-            'address': 'local:ram-emitter',
-            'config': {
-                'emit': {
-                    'dissolved_o2': 'float',
-                    'dissolved_co2': 'float',
-                    'biomass': 'float',
-                    'gas_holdup': 'float',
-                    'kla_o2': 'float',
-                    'o2_uptake_rate': 'float',
-                    'co2_evolution_rate': 'float',
-                    'specific_growth_rate': 'float',
-                    'time': 'float',
-                },
-            },
-            'inputs': {
-                'dissolved_o2': ['stores', 'dissolved_o2'],
-                'dissolved_co2': ['stores', 'dissolved_co2'],
-                'biomass': ['stores', 'biomass'],
-                'gas_holdup': ['stores', 'gas_holdup'],
-                'kla_o2': ['stores', 'kla_o2'],
-                'o2_uptake_rate': ['stores', 'o2_uptake_rate'],
-                'co2_evolution_rate': ['stores', 'co2_evolution_rate'],
-                'specific_growth_rate': ['stores', 'specific_growth_rate'],
-                'time': ['global_time'],
-            },
-        },
-    }
+    if core is None:
+        core = register_bioreactordesign()
+
+    params = spec.get("parameters") or {}
+    state = _substitute(spec.get("state") or {}, params, overrides or {})
+    return Composite({"state": state}, core=core)
 
 
-def make_coupled_document(
-    reactor_type='bubble_column',
-    volume_L=20.0,
-    diameter_m=0.2,
-    gas_flow_rate_Lpm=1.0,
-    temperature_K=298.15,
-    pressure_atm=1.0,
-    o2_fraction_inlet=0.21,
-    co2_fraction_inlet=0.0004,
-    mean_bubble_diameter_mm=3.0,
-    impeller_power_W=0.0,
-    initial_biomass_gL=5.0,
-    initial_glucose_gL=10.0,
-    initial_do_mgL=8.0,
-    initial_dco2_mgL=0.5,
-    max_growth_rate_per_h=0.4,
-    ks_oxygen_mgL=0.2,
-    yield_biomass_o2=1.2,
-    maintenance_coeff_per_h=0.01,
-    respiratory_quotient=1.0,
-    growth_enabled=True,
-    interval=1.0,
-):
-    """Build the coupled reactor↔cell composite document.
-
-    Wires BiRDTransportProcess (reactor side: transport-only) and
-    MonodCellProcess (cell side: biomass + exchange) to shared dissolved-species
-    stores. The cell's consumption deltas and the reactor's transport deltas
-    aggregate additively at ``dissolved_o2`` / ``dissolved_co2`` (bare float
-    stores), so net d[O2]/dt = transport − consumption. The biomass store is
-    written only by the cell; the transport process reads it as input.
-
-    This is the declarative equivalent of pbg_bioreactordesign.coupled_reactor_cell
-    (the .composite.yaml catalog spec) with adjustable parameters for the
-    coupled studies (bird-02 liveness, bird-03 interval, bird-04 geometry).
-
-    Returns a dict suitable for ``Composite({'state': doc}, core=core)``.
-    """
-    transport_cfg = {
-        'reactor_type': reactor_type,
-        'volume_L': volume_L,
-        'diameter_m': diameter_m,
-        'gas_flow_rate_Lpm': gas_flow_rate_Lpm,
-        'temperature_K': temperature_K,
-        'pressure_atm': pressure_atm,
-        'o2_fraction_inlet': o2_fraction_inlet,
-        'co2_fraction_inlet': co2_fraction_inlet,
-        'mean_bubble_diameter_mm': mean_bubble_diameter_mm,
-        'impeller_power_W': impeller_power_W,
-    }
-    cell_cfg = {
-        'initial_biomass_gL': initial_biomass_gL,
-        'max_growth_rate_per_h': max_growth_rate_per_h,
-        'ks_oxygen_mgL': ks_oxygen_mgL,
-        'yield_biomass_o2': yield_biomass_o2,
-        'maintenance_coeff_per_h': maintenance_coeff_per_h,
-        'respiratory_quotient': respiratory_quotient,
-        'growth_enabled': growth_enabled,
-    }
-
-    return {
-        'transport': {
-            '_type': 'process',
-            'address': 'local:BiRDTransportProcess',
-            'config': transport_cfg,
-            'interval': interval,
-            'inputs': {
-                'dissolved_o2': ['stores', 'dissolved_o2'],
-                'dissolved_co2': ['stores', 'dissolved_co2'],
-                'biomass': ['stores', 'biomass'],
-                'glucose': ['stores', 'glucose'],
-                'gas_flow_rate_Lpm': ['stores', 'gas_flow_rate_Lpm'],
-            },
-            'outputs': {
-                'dissolved_o2': ['stores', 'dissolved_o2'],
-                'dissolved_co2': ['stores', 'dissolved_co2'],
-                'o2_transport_delta': ['stores', 'o2_transport_delta'],
-                'co2_transport_delta': ['stores', 'co2_transport_delta'],
-                'kla_o2': ['stores', 'kla_o2'],
-                'o2_saturation': ['stores', 'o2_saturation'],
-                'gas_holdup': ['stores', 'gas_holdup'],
-            },
-        },
-        'cell': {
-            '_type': 'process',
-            'address': 'local:MonodCellProcess',
-            'config': cell_cfg,
-            'interval': interval,
-            'inputs': {
-                'dissolved_o2': ['stores', 'dissolved_o2'],
-            },
-            'outputs': {
-                'biomass': ['stores', 'biomass'],
-                'dissolved_o2': ['stores', 'dissolved_o2'],
-                'dissolved_co2': ['stores', 'dissolved_co2'],
-                'cell_mass': ['stores', 'cell_mass'],
-                'growth_rate': ['stores', 'specific_growth_rate'],
-                'external_exchange_fluxes': ['stores', 'external_exchange_fluxes'],
-                'o2_exchange_delta': ['stores', 'o2_exchange_delta'],
-            },
-        },
-        'stores': {
-            'dissolved_o2': initial_do_mgL,
-            'dissolved_co2': initial_dco2_mgL,
-            'biomass': initial_biomass_gL,
-            'glucose': initial_glucose_gL,
-            'gas_flow_rate_Lpm': gas_flow_rate_Lpm,
-        },
-        'emitter': {
-            '_type': 'step',
-            'address': 'local:ram-emitter',
-            'config': {
-                'emit': {
-                    'dissolved_o2': 'float',
-                    'dissolved_co2': 'float',
-                    'biomass': 'float',
-                    'cell_mass': 'float',
-                    'specific_growth_rate': 'float',
-                    'o2_transport_delta': 'float',
-                    'o2_exchange_delta': 'float',
-                    'kla_o2': 'float',
-                    'time': 'float',
-                },
-            },
-            'inputs': {
-                'dissolved_o2': ['stores', 'dissolved_o2'],
-                'dissolved_co2': ['stores', 'dissolved_co2'],
-                'biomass': ['stores', 'biomass'],
-                'cell_mass': ['stores', 'cell_mass'],
-                'specific_growth_rate': ['stores', 'specific_growth_rate'],
-                'o2_transport_delta': ['stores', 'o2_transport_delta'],
-                'o2_exchange_delta': ['stores', 'o2_exchange_delta'],
-                'kla_o2': ['stores', 'kla_o2'],
-                'time': ['global_time'],
-            },
-        },
-    }
+__all__ = [
+    'make_reactor_document',
+    'make_coupled_document',
+    'register_bioreactordesign',
+    'list_composite_specs',
+    'load_composite_spec',
+    'build_composite',
+]

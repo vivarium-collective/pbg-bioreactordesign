@@ -6,10 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "pbg-bioreactordesign"
 version = "0.1.0"
 description = "Process-bigraph wrapper for BioReactorDesign (BiRD) bioreactor simulation"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [
     "process-bigraph>=0.0.10",
     "bigraph-schema",
+    "pbg-superpowers",
+    "pyyaml",
     "numpy",
     "scipy",
 ]
@@ -17,6 +19,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest", "bigraph-viz", "matplotlib"]
 bird = ["nlr-bird"]
+
+[tool.uv.sources]
+pbg-superpowers = { git = "https://github.com/vivarium-collective/pbg-superpowers.git", branch = "main" }
 
 [tool.setuptools.packages.find]
 include = ["pbg_bioreactordesign*"]
