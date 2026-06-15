@@ -20,6 +20,7 @@ from pbg_bioreactordesign.transport import (
     compute_transport_state,
     o2_transport_rate,
     co2_transport_rate,
+    saturation_concentration,
 )
 from pbg_bioreactordesign.composites import (
     make_reactor_document,
@@ -161,6 +162,33 @@ def test_reactor_process_matches_prerefactor_baseline(core):
         assert row['dissolved_o2'] == pytest.approx(do, rel=1e-6), f't={t_h}h DO'
         assert row['dissolved_co2'] == pytest.approx(dco2, rel=1e-6), f't={t_h}h dCO2'
         assert row['biomass'] == pytest.approx(x, rel=1e-6), f't={t_h}h biomass'
+
+
+# --- Regression: O2 saturation must DECREASE with temperature ---
+
+def test_o2_saturation_decreases_with_temperature():
+    """Gas solubility in water falls as T rises (van 't Hoff). c*(O2) at 310 K
+    (37 C, the cell-coupled target) must be lower than at 298.15 K (25 C, the
+    BiRD test condition), and land near the literature air-saturation value.
+
+    Literature O2 saturation in water under 1 atm air:
+        25 C / 298.15 K  ~ 8.2-8.4 mg/L
+        37 C / 310.15 K  ~ 6.5-7.0 mg/L  (~20-25% lower)
+    """
+    p_o2 = 0.21  # atm O2 in air at 1 atm total
+    c298 = saturation_concentration('O2', 298.15, p_o2)
+    c310 = saturation_concentration('O2', 310.0, p_o2)
+
+    # 298 K value preserved at its calibrated ~8.21 mg/L.
+    assert c298 == pytest.approx(8.21, rel=1e-6)
+    # Solubility falls with temperature (the bug had it rising).
+    assert c310 < c298
+    # And lands in the literature 37 C air-saturation band.
+    assert 6.5 <= c310 <= 7.5
+    # CO2 shares the same Henry/van 't Hoff form: it must fall with T too.
+    co2_298 = saturation_concentration('CO2', 298.15, p_o2)
+    co2_310 = saturation_concentration('CO2', 310.0, p_o2)
+    assert co2_310 < co2_298
 
 
 # --- Behavior 6: monod-cell-conforms-to-interface-contract ---
