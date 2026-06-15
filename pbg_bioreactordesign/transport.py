@@ -88,8 +88,14 @@ def saturation_concentration(species, T, p_partial_atm):
         'N2': 18.0 / 0.78,    # mg/L per atm N2 at 298.15 K
     }
     sp = SPECIES_DATA[species]
-    # Temperature correction: solubility decreases with temperature
-    T_factor = math.exp(-sp['DH'] * (1.0 / T - 1.0 / 298.15))
+    # van 't Hoff temperature correction. DH is the (positive) van 't Hoff
+    # coefficient -ΔH_sol/R (K); for T > 298.15 K the (1/T - 1/298.15) term is
+    # negative, so the factor is < 1 and solubility DECREASES with temperature
+    # — the physically correct direction for gases dissolving in water (Sander,
+    # Atmos. Chem. Phys. 2015). This matches henry_constant()'s sign exactly;
+    # the previous extra minus sign inverted it, making c* RISE with T (a ~24%
+    # over-estimate at the 310 K cell-coupling target).
+    T_factor = math.exp(sp['DH'] * (1.0 / T - 1.0 / 298.15))
     return ref_cstar.get(species, 10.0) * p_partial_atm * T_factor
 
 
