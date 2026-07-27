@@ -1,0 +1,93 @@
+name: Publish read-only dashboard
+
+# Build this workspace into a self-contained static SPA and publish it to the
+# gh-pages branch at dashboard/ (served at
+# https://vivarium-collective.github.io/viva-bioreactordesign/dashboard/). A read-only mirror of every
+# investigation + study on main, browsable with no server.
+#
+# Scaffolded by `vivarium-workbench add-dashboard`. DEPLOY job (post-merge), not
+# a PR gate; it only ever writes dashboard/ on gh-pages.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workspace/**'
+      - 'investigations/**'
+      - 'studies/**'
+      - 'workspace.yaml'
+      - 'reports/figures/**'
+      - 'scripts/publish_dashboard.sh'
+      - '.github/workflows/publish-dashboard.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: publish-dashboard
+  cancel-in-progress: true
+
+permissions:
+  contents: write   # push to the gh-pages branch
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VIVARIUM_WORKBENCH_REQUIRE_LOOM: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12.9
+
+      - name: Install vivarium-workbench (robust — skip workspace sim-deps)
+        # Only vivarium-workbench + this workspace's own package are needed to
+        # render composite specs statically. The workspace's sibling
+        # process-packages (often relative-path deps) do NOT resolve on a clean
+        # runner and are NOT needed for the static build, so install the
+        # workspace with --no-deps: a missing sim-dep degrades to an unresolved
+        # composite in the dashboard rather than aborting the whole publish.
+        run: |
+          uv venv
+          uv pip install "vivarium-workbench @ git+https://github.com/vivarium-collective/vivarium-workbench.git@main"
+          uv pip install -e . --no-deps || echo "workspace has no installable build; composites render from spec only"
+
+      - name: Build dashboard snapshot
+        run: |
+          source .venv/bin/activate
+          bash scripts/publish_dashboard.sh reports/published/dashboard
+
+      - name: Publish to gh-pages (create the branch if absent)
+        run: |
+          set -euo pipefail
+          if [ ! -f reports/published/dashboard/index.html ]; then
+            echo "::error::build produced no bundle (no index.html); nothing to publish"
+            exit 1
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages 2>/dev/null || true
+          git worktree add --detach /tmp/ghp HEAD
+          cd /tmp/ghp
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git checkout -B gh-pages origin/gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . >/dev/null 2>&1 || true
+            touch .nojekyll
+          fi
+          rm -rf dashboard && mkdir -p dashboard
+          cp -R "$GITHUB_WORKSPACE/reports/published/dashboard/." dashboard/
+          git add -A
+          if git diff --cached --quiet; then
+            echo "dashboard snapshot unchanged; skipping commit"
+          else
+            git commit -m "gh-pages: republish read-only dashboard (automated, ${GITHUB_SHA::7})"
+            git push origin gh-pages
+            echo "published read-only dashboard to gh-pages:dashboard/"
+          fi
