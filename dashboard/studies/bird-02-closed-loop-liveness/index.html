@@ -183,97 +183,70 @@
 .di-chip{font-size:0.7em;padding:1px 8px;border-radius:9999px;background:#e2e8f0;color:#475569}
 </style>
 
+<style>
+/* ── Study Overview redesign: narrative order + progressive disclosure ── */
+.is-hidden{display:none !important}
+.narrative-field{margin:6px 0}
+.add-field-btn{background:none;border:1px dashed #cbd5e1;color:#64748b;font-size:0.82em;
+  padding:4px 12px;border-radius:6px;cursor:pointer;transition:border-color .12s,color .12s,background .12s}
+.add-field-btn:hover{border-color:#3b82f6;color:#3b82f6;background:#eff6ff}
+.conclusion-block{border-top:2px solid #e2e8f0;padding-top:14px;margin-top:22px}
+.conclusion-insight{font-size:1.02em;line-height:1.55;color:#1e293b;margin:2px 0 12px;font-weight:500}
+.computed-tag{display:inline-block;font-size:0.68em;font-weight:600;text-transform:uppercase;
+  letter-spacing:0.04em;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;
+  padding:1px 7px;border-radius:9999px;margin-left:8px;vertical-align:middle}
+.conclusion-tags{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.tag-control{display:inline-flex;align-items:center;gap:6px}
+.tag-k{font-size:0.72em;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:600}
+.tag-select,.tag-input{font-size:0.85em;padding:3px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#fff}
+.tag-input{min-width:220px}
+</style>
 <section class="study-tab-panel active" data-kind="overview" id="panel-overview">
   <div class="study-overview">
 
     
     
     
-    <div class="overview-section narrative-card" data-narrative-card="report">
-      <h2 class="overview-label">📋 Summary</h2>
-      <div class="narrative-grid">
-        
-        <label class="narrative-row">
-          <span class="narrative-label">Verdict</span>
-          <span class="narrative-input verdict-badge-computed"
-                title="Computed from the gate evaluator (read-only)"
-                style="display:inline-block;padding:2px 12px;border-radius:9999px;font-weight:700;font-size:0.85em;background:#f1f5f9;color:#475569">not_started</span>
-          <span class="muted small" style="margin-left:6px">computed from gate evaluator</span>
-        </label>
-        <label class="narrative-row">
-          <span class="narrative-label">Confidence</span>
-          <select class="narrative-input" data-narrative-path="report.confidence">
-            <option value="">(unset)</option>
-            <option value="high" >high</option>
-            <option value="medium" >medium</option>
-            <option value="low" >low</option>
-          </select>
-        </label>
-        <label class="narrative-row">
-          <span class="narrative-label">Evidence quality</span>
-          <input type="text" class="narrative-input" data-narrative-path="report.evidence_quality"
-                 value=""
-                 placeholder="e.g. calibrated | literature-matched | aspirational | regression-only">
-        </label>
-        <div class="narrative-row narrative-row-wide">
-          <span class="narrative-label">Main insight</span>
-          <span class="narrative-input" style="background:transparent;border:0;color:#334155">(computed from findings in the report)
-            <span class="muted small">— computed from findings</span></span>
-        </div>
-        <label class="narrative-row narrative-row-wide">
-          <span class="narrative-label">Caveat</span>
-          <textarea class="narrative-input narrative-textarea" rows="2"
-                    data-narrative-path="report.caveat"
-                    placeholder="One sentence: the headline limitation a reviewer needs to know."></textarea>
-        </label>
-        <label class="narrative-row narrative-row-wide">
-          <span class="narrative-label">Conclusion</span>
-          <textarea class="narrative-input narrative-textarea" rows="3"
-                    data-narrative-path="report.conclusion"
-                    placeholder="Multi-sentence: what the runs + tests demonstrated."></textarea>
-        </label>
-      </div>
-    </div>
 
     
-    <div class="overview-section biology-summary-callout">
-      <h2 class="biology-glance-label">Biology — what this study is about</h2>
-      <textarea class="biology-prose narrative-input narrative-textarea" rows="4"
-                data-narrative-path="biological_summary"
-                placeholder="Multi-paragraph plain-English mechanism narrative — the 'textbook write-up' a non-modeler would read."></textarea>
-      
-    </div>
+    
 
+    
     
     <h2 class="overview-label">Question &amp; approach</h2>
-
     
     
     <div class="overview-section">
-      <div id="question-text" class="overview-prose" data-editable="true"
-           data-field="question"
-           data-placeholder="(what research question is this study asking?)">When BiRDTransportProcess is coupled to the Phase-1 MonodCellProcess at a
+      <div id="question-text" class="overview-prose" data-editable="true" data-field="question"
+           data-placeholder="+ Add the research question this study asks">When BiRDTransportProcess is coupled to the Phase-1 MonodCellProcess at a
 static high biomass density, does the reactor→cell feedback fire —
 dissolved O2 dropping below saturation as consumption outpaces transport —
 with O2 mass balance closing across cell and reactor contributions?
 </div>
-    </div>
-    <div class="overview-section">
-      <div id="hypothesis-text" class="overview-prose" data-editable="true"
-           data-field="hypothesis"
+      <div id="hypothesis-text" class="overview-prose" data-editable="true" data-field="hypothesis"
            data-placeholder="(predicted outcome)">At an impactful biomass density, steady-state dissolved O2 settles below
 saturation, d[O2]/dt equals reactor transport minus cell consumption at
 every step, and removing the biomass input returns O2 to saturation —
 confirming a live, bidirectional loop.
 </div>
-    </div>
-    <div class="overview-section">
       <div id="objective-text" class="overview-prose" data-editable="true" data-field="objective">Compose BiRDTransportProcess with MonodCellProcess at a constant high
 biomass density and measure dissolved O2 and the O2 balance to determine
 that the closed loop is live, not merely wired.
 </div>
     </div>
     
+
+    
+    <div class="overview-section biology-summary-callout">
+      <h2 class="biology-glance-label">Biology — what this study is about</h2>
+      
+      
+      <button type="button" class="add-field-btn" data-reveal-field="biological_summary" style="margin-top:8px">+ Add biology narrative</button>
+      <textarea class="biology-prose narrative-input narrative-textarea is-hidden" rows="4"
+                data-narrative-path="biological_summary" data-field-editor="biological_summary"
+                placeholder="Plain-English mechanism narrative — the 'textbook write-up' a non-modeler would read."></textarea>
+      
+    </div>
 
     
     
@@ -337,6 +310,45 @@ that the closed loop is live, not merely wired.
       </div>
     </div>
     
+
+    
+    
+    <div class="overview-section conclusion-block">
+      <h2 class="overview-label">Conclusion</h2>
+      
+      
+    <div class="narrative-field">
+      <button type="button" class="add-field-btn" data-reveal-field="report.conclusion">+ Add conclusion</button>
+      <label class="narrative-row narrative-row-wide is-hidden" data-field-editor="report.conclusion">
+        <span class="narrative-label">Conclusion</span>
+        <textarea class="narrative-input narrative-textarea" rows="3"
+                  data-narrative-path="report.conclusion" placeholder="What the runs + tests demonstrated."></textarea>
+      </label>
+    </div>
+    
+      
+    <div class="narrative-field">
+      <button type="button" class="add-field-btn" data-reveal-field="report.caveat">+ Add caveat</button>
+      <label class="narrative-row narrative-row-wide is-hidden" data-field-editor="report.caveat">
+        <span class="narrative-label">Caveat</span>
+        <textarea class="narrative-input narrative-textarea" rows="2"
+                  data-narrative-path="report.caveat" placeholder="The headline limitation a reviewer needs to know."></textarea>
+      </label>
+    </div>
+    
+      <div class="conclusion-tags">
+        <label class="tag-control"><span class="tag-k">confidence</span>
+          <select class="narrative-input tag-select" data-narrative-path="report.confidence">
+            <option value="">—</option>
+            <option value="high" >high</option>
+            <option value="medium" >medium</option>
+            <option value="low" >low</option>
+          </select></label>
+        <label class="tag-control"><span class="tag-k">evidence</span>
+          <input type="text" class="narrative-input tag-input" data-narrative-path="report.evidence_quality"
+                 value="" placeholder="calibrated | literature-matched | …"></label>
+      </div>
+    </div>
 
     
     <details class="overview-section">
@@ -859,7 +871,7 @@ requires: [{"variant_hook": "biomass_input_zero"}, {"listener": "dissolved_o2"}]
 </section>
 
 </main>
-<script>window.__DASH_CONFIG__ = { mode: "snapshot", interactiveUrl: "https://github.com/vivarium-collective/viva-bioreactordesign", basePath: "/viva-bioreactordesign/dashboard", inputsDownloadBase: "https://github.com/vivarium-collective/viva-bioreactordesign/raw/main" };</script>
+<script>window.__DASH_CONFIG__ = { mode: "snapshot", interactiveUrl: "https://github.com/vivarium-collective/viva-bioreactordesign", basePath: "/viva-bioreactordesign/dashboard", inputsDownloadBase: "https://github.com/vivarium-collective/viva-bioreactordesign/raw/main", provenance: {"repo_slug": "vivarium-collective/viva-bioreactordesign", "repo_url": "https://github.com/vivarium-collective/viva-bioreactordesign", "commit": "2fd58ab4ad97e7c77c8a516d3877ad4df2bff0e3", "commit_url": "https://github.com/vivarium-collective/viva-bioreactordesign/commit/2fd58ab4ad97e7c77c8a516d3877ad4df2bff0e3", "branch": "main", "generated_at": "2026-07-27 15:59 UTC"} };</script>
 <script src="/viva-bioreactordesign/dashboard/assets/data-source.js"></script>
 <script>
 window._studyName = "bird-02-closed-loop-liveness";
