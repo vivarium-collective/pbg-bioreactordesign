@@ -21,7 +21,10 @@ dev = ["pytest", "bigraph-viz", "matplotlib"]
 bird = ["nlr-bird"]
 
 [tool.uv.sources]
-pbg-superpowers = { git = "https://github.com/vivarium-collective/pbg-superpowers.git", branch = "main" }
+# The pbg-superpowers dist is the deprecation shim in the viva-superpowers
+# repo's shim/ subdir (the repo root was renamed to viva-superpowers). Point
+# at the subdir so the "pbg-superpowers" name resolves (re-exports viva_superpowers).
+pbg-superpowers = { git = "https://github.com/vivarium-collective/viva-superpowers.git", branch = "main", subdirectory = "shim" }
 
 [tool.setuptools.packages.find]
 include = ["pbg_bioreactordesign*"]
