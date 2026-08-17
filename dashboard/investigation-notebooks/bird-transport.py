@@ -74,7 +74,7 @@ os.chdir(REPO)
 RERUN = True
 
 # --- standard process-bigraph protocol: register the workspace's Core ---
-from pbg_bioreactordesign.core import build_core
+from viva_bioreactordesign.core import build_core
 core = build_core()
 
 # --- imported from the repo this notebook was generated for ---
@@ -124,6 +124,31 @@ def describe_spec(spec):
     print("\nfull editable spec dict:")
     print(_json.dumps(spec, indent=2, default=str))
 
+import base64 as _b64, pathlib as _pl
+def _render_one(address, config, runs_db, study_yaml):
+    """Generic figure renderer (no workspace render_study_viz.py):
+    resolve an ``image:<relpath>`` visualization to displayable HTML,
+    relative to the study directory."""
+    addr = str(address or '')
+    for _scheme in ('image:', 'file:', 'gif:', 'png:', 'svg:', 'jpg:', 'jpeg:'):
+        if addr.startswith(_scheme):
+            addr = addr[len(_scheme):]; break
+    _p = _pl.Path(addr)
+    if not _p.is_absolute():
+        _p = _pl.Path(study_yaml).resolve().parent / _p
+    if not _p.is_file():
+        return f'<p style="color:#b91c1c">figure not found: {address}</p>'
+    _suffix = _p.suffix.lower()
+    if _suffix == '.svg':
+        return _p.read_text(encoding='utf-8', errors='replace')
+    if _suffix in ('.png', '.jpg', '.jpeg', '.gif', '.webp'):
+        _mime = 'jpeg' if _suffix in ('.jpg', '.jpeg') else _suffix[1:]
+        _data = _b64.b64encode(_p.read_bytes()).decode('ascii')
+        return f'<img src="data:image/{_mime};base64,{_data}" style="max-width:100%"/>'
+    if _suffix in ('.html', '.htm'):
+        return _p.read_text(encoding='utf-8', errors='replace')
+    return f'<p style="color:#6b7280">unsupported figure type: {address}</p>'
+
 # ## Study: `bird-01-transport-process`
 #
 # **Question.** Can the gas–liquid transport physics be extracted into a shared module
@@ -147,6 +172,46 @@ def describe_spec(spec):
 # removed as obsolete.
 
 # ### Parameters
+#
+# | simulation | composite | steps | params |
+# | --- | --- | --- | --- |
+# | `standalone-reactor` | `viva_bioreactordesign.composites.reactor` | 0 | — |
+
+# ### Specification (process-bigraph) — load, inspect, edit
+#
+# Each composite is a process-bigraph *document*: named processes (`_type: process`) bound to an `address`, wired by `inputs`/`outputs` ports over shared stores. For every composite below the first cell loads the spec into a plain **editable Python dict** and prints its structure; the second cell is a **control panel** listing every configuration value and per-process `interval` so you can tweak any of them. Your edits are read when the composite is built and run, in the **Run** section.
+
+# **Composite `viva_bioreactordesign.composites.reactor`** — `spec_viva_bioreactordesign_composites_reactor` (a plain, editable dict)
+
+from viva_superpowers.composite_spec import load_spec
+spec_viva_bioreactordesign_composites_reactor = load_spec(REPO / 'viva_bioreactordesign/composites/reactor.composite.yaml')
+describe_spec(spec_viva_bioreactordesign_composites_reactor)
+
+# === Edit parameters for composite 'reactor' ===
+# Each line is the spec's CURRENT value — change any, then run the Run cell
+# below. The spec is a plain dict, so you may also add or remove keys.
+
+# process 'reactor'  (local:BiRDReactorProcess)
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['interval'] = 1.0
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['reactor_type'] = 'bubble_column'
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['volume_L'] = 20.0
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['diameter_m'] = 0.2
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['liquid_height_m'] = 0.5
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['gas_flow_rate_Lpm'] = 1.0
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['temperature_K'] = 298.15
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['pressure_atm'] = 1.0
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['o2_fraction_inlet'] = 0.21
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['co2_fraction_inlet'] = 0.0004
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['mean_bubble_diameter_mm'] = 3.0
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['initial_biomass_gL'] = 0.5
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['initial_do_mgL'] = 8.0
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['initial_dco2_mgL'] = 0.5
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['max_growth_rate_per_h'] = 0.4
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['ks_oxygen_mgL'] = 0.2
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['yield_biomass_o2'] = 1.2
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['maintenance_coeff_per_h'] = 0.01
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['respiratory_quotient'] = 1.0
+spec_viva_bioreactordesign_composites_reactor['state']['reactor']['config']['impeller_power_W'] = 0.0
 
 # ### Run
 #
@@ -177,6 +242,47 @@ print("No recorded runs for this study; nothing to reproduce.")
 # confirming a live, bidirectional loop.
 
 # ### Parameters
+#
+# | simulation | composite | steps | params |
+# | --- | --- | --- | --- |
+# | `coupled-reactor-cell` | `viva_bioreactordesign.composites.coupled_reactor_cell` | 0 | — |
+
+# ### Specification (process-bigraph) — load, inspect, edit
+#
+# Each composite is a process-bigraph *document*: named processes (`_type: process`) bound to an `address`, wired by `inputs`/`outputs` ports over shared stores. For every composite below the first cell loads the spec into a plain **editable Python dict** and prints its structure; the second cell is a **control panel** listing every configuration value and per-process `interval` so you can tweak any of them. Your edits are read when the composite is built and run, in the **Run** section.
+
+# **Composite `viva_bioreactordesign.composites.coupled_reactor_cell`** — `spec_viva_bioreactordesign_composites_coupled_reactor_cell` (a plain, editable dict)
+
+from viva_superpowers.composite_spec import load_spec
+spec_viva_bioreactordesign_composites_coupled_reactor_cell = load_spec(REPO / 'viva_bioreactordesign/composites/coupled_reactor_cell.composite.yaml')
+describe_spec(spec_viva_bioreactordesign_composites_coupled_reactor_cell)
+
+# === Edit parameters for composite 'coupled_reactor_cell' ===
+# Each line is the spec's CURRENT value — change any, then run the Run cell
+# below. The spec is a plain dict, so you may also add or remove keys.
+
+# process 'transport'  (local:BiRDTransportProcess)
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['interval'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['reactor_type'] = 'bubble_column'
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['volume_L'] = 20.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['diameter_m'] = 0.2
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['gas_flow_rate_Lpm'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['temperature_K'] = 298.15
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['pressure_atm'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['o2_fraction_inlet'] = 0.21
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['co2_fraction_inlet'] = 0.0004
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['mean_bubble_diameter_mm'] = 3.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['impeller_power_W'] = 0.0
+
+# process 'cell'  (local:MonodCellProcess)
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['interval'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['initial_biomass_gL'] = 5.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['max_growth_rate_per_h'] = 0.4
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['ks_oxygen_mgL'] = 0.2
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['yield_biomass_o2'] = 1.2
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['maintenance_coeff_per_h'] = 0.01
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['respiratory_quotient'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['growth_enabled'] = False
 
 # ### Run
 #
@@ -204,6 +310,47 @@ print("No recorded runs for this study; nothing to reproduce.")
 # qualitative result.
 
 # ### Parameters
+#
+# | simulation | composite | steps | params |
+# | --- | --- | --- | --- |
+# | `coupled-reactor-cell` | `viva_bioreactordesign.composites.coupled_reactor_cell` | 0 | — |
+
+# ### Specification (process-bigraph) — load, inspect, edit
+#
+# Each composite is a process-bigraph *document*: named processes (`_type: process`) bound to an `address`, wired by `inputs`/`outputs` ports over shared stores. For every composite below the first cell loads the spec into a plain **editable Python dict** and prints its structure; the second cell is a **control panel** listing every configuration value and per-process `interval` so you can tweak any of them. Your edits are read when the composite is built and run, in the **Run** section.
+
+# **Composite `viva_bioreactordesign.composites.coupled_reactor_cell`** — `spec_viva_bioreactordesign_composites_coupled_reactor_cell` (a plain, editable dict)
+
+from viva_superpowers.composite_spec import load_spec
+spec_viva_bioreactordesign_composites_coupled_reactor_cell = load_spec(REPO / 'viva_bioreactordesign/composites/coupled_reactor_cell.composite.yaml')
+describe_spec(spec_viva_bioreactordesign_composites_coupled_reactor_cell)
+
+# === Edit parameters for composite 'coupled_reactor_cell' ===
+# Each line is the spec's CURRENT value — change any, then run the Run cell
+# below. The spec is a plain dict, so you may also add or remove keys.
+
+# process 'transport'  (local:BiRDTransportProcess)
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['interval'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['reactor_type'] = 'bubble_column'
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['volume_L'] = 20.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['diameter_m'] = 0.2
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['gas_flow_rate_Lpm'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['temperature_K'] = 298.15
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['pressure_atm'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['o2_fraction_inlet'] = 0.21
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['co2_fraction_inlet'] = 0.0004
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['mean_bubble_diameter_mm'] = 3.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['impeller_power_W'] = 0.0
+
+# process 'cell'  (local:MonodCellProcess)
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['interval'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['initial_biomass_gL'] = 5.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['max_growth_rate_per_h'] = 0.4
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['ks_oxygen_mgL'] = 0.2
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['yield_biomass_o2'] = 1.2
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['maintenance_coeff_per_h'] = 0.01
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['respiratory_quotient'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['growth_enabled'] = False
 
 # ### Run
 #
@@ -231,6 +378,47 @@ print("No recorded runs for this study; nothing to reproduce.")
 # configured power input and superficial gas velocity within tolerance.
 
 # ### Parameters
+#
+# | simulation | composite | steps | params |
+# | --- | --- | --- | --- |
+# | `coupled-reactor-cell` | `viva_bioreactordesign.composites.coupled_reactor_cell` | 0 | — |
+
+# ### Specification (process-bigraph) — load, inspect, edit
+#
+# Each composite is a process-bigraph *document*: named processes (`_type: process`) bound to an `address`, wired by `inputs`/`outputs` ports over shared stores. For every composite below the first cell loads the spec into a plain **editable Python dict** and prints its structure; the second cell is a **control panel** listing every configuration value and per-process `interval` so you can tweak any of them. Your edits are read when the composite is built and run, in the **Run** section.
+
+# **Composite `viva_bioreactordesign.composites.coupled_reactor_cell`** — `spec_viva_bioreactordesign_composites_coupled_reactor_cell` (a plain, editable dict)
+
+from viva_superpowers.composite_spec import load_spec
+spec_viva_bioreactordesign_composites_coupled_reactor_cell = load_spec(REPO / 'viva_bioreactordesign/composites/coupled_reactor_cell.composite.yaml')
+describe_spec(spec_viva_bioreactordesign_composites_coupled_reactor_cell)
+
+# === Edit parameters for composite 'coupled_reactor_cell' ===
+# Each line is the spec's CURRENT value — change any, then run the Run cell
+# below. The spec is a plain dict, so you may also add or remove keys.
+
+# process 'transport'  (local:BiRDTransportProcess)
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['interval'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['reactor_type'] = 'bubble_column'
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['volume_L'] = 20.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['diameter_m'] = 0.2
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['gas_flow_rate_Lpm'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['temperature_K'] = 298.15
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['pressure_atm'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['o2_fraction_inlet'] = 0.21
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['co2_fraction_inlet'] = 0.0004
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['mean_bubble_diameter_mm'] = 3.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['transport']['config']['impeller_power_W'] = 0.0
+
+# process 'cell'  (local:MonodCellProcess)
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['interval'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['initial_biomass_gL'] = 5.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['max_growth_rate_per_h'] = 0.4
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['ks_oxygen_mgL'] = 0.2
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['yield_biomass_o2'] = 1.2
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['maintenance_coeff_per_h'] = 0.01
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['respiratory_quotient'] = 1.0
+spec_viva_bioreactordesign_composites_coupled_reactor_cell['state']['cell']['config']['growth_enabled'] = False
 
 # ### Run
 #

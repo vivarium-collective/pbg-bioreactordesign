@@ -1,1 +1,1 @@
-{"error": "could not import pbg_bioreactordesign.core: No module named 'pbg_bioreactordesign.core'", "processes": [], "types": [], "default_emitter": null, "imports": []}
+{"error": "could not import viva_bioreactordesign.core: No module named 'viva_bioreactordesign.core'", "processes": [], "types": [], "default_emitter": null, "imports": []}
