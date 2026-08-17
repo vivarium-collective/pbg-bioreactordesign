@@ -10,8 +10,8 @@ import pytest
 from process_bigraph import Composite, allocate_core
 from process_bigraph.emitter import RAMEmitter, gather_emitter_results
 
-from pbg_bioreactordesign.processes import BiRDTransportProcess, MonodCellProcess
-from pbg_bioreactordesign.composites import make_coupled_document
+from viva_bioreactordesign.processes import BiRDTransportProcess, MonodCellProcess
+from viva_bioreactordesign.composites import make_coupled_document
 
 
 @pytest.fixture

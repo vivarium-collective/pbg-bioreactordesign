@@ -7,7 +7,7 @@
 # consumption. The biomass store is written only by the cell; transport reads it.
 #
 # This is the data-first equivalent of make_coupled_document() in composites.py.
-# Discovered as spec_id: pbg_bioreactordesign.coupled_reactor_cell — the baseline
+# Discovered as spec_id: viva_bioreactordesign.coupled_reactor_cell — the baseline
 # referenced by studies bird-02 / bird-03 / bird-04.
 #
 # Defaults here use an impactful biomass density (5 g/L) with growth disabled —

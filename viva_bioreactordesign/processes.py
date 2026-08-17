@@ -27,8 +27,8 @@ from scipy.integrate import solve_ivp
 from process_bigraph import Process
 
 # Re-export the transport physics from the shared module so existing imports
-# (`from pbg_bioreactordesign.processes import henry_constant`, etc.) keep working.
-from pbg_bioreactordesign.transport import (  # noqa: F401
+# (`from viva_bioreactordesign.processes import henry_constant`, etc.) keep working.
+from viva_bioreactordesign.transport import (  # noqa: F401
     SPECIES_DATA,
     WC_PSI,
     WC_M,

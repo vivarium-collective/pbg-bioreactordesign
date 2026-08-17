@@ -1,11 +1,11 @@
 [
   {
-    "name": "pbg-bioreactordesign",
+    "name": "viva-bioreactordesign",
     "description": "Process-bigraph wrapper for BioReactorDesign (BiRD) bioreactor simulation",
-    "source": "https://github.com/vivarium-collective/pbg-bioreactordesign.git",
+    "source": "https://github.com/vivarium-collective/viva-bioreactordesign.git",
     "ref": "main",
-    "package": "pbg_bioreactordesign",
-    "homepage": "https://github.com/vivarium-collective/pbg-bioreactordesign",
+    "package": "viva_bioreactordesign",
+    "homepage": "https://github.com/vivarium-collective/viva-bioreactordesign",
     "tags": [
       "bioreactor",
       "mass-transfer"

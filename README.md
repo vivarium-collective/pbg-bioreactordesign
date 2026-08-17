@@ -1,8 +1,8 @@
-# pbg-bioreactordesign
+# viva-bioreactordesign
 
 Process-bigraph wrapper for [BioReactorDesign (BiRD)](https://github.com/NatLabRockies/BioReactorDesign) bioreactor simulation.
 
-**[View the Interactive Demo Report](https://vivarium-collective.github.io/pbg-bioreactordesign/report.html)** — three E. coli fermentation scenarios from 2 L bench scale to 10,000 L production, with 3D reactor viewers, time-series charts, and bigraph architecture diagrams.
+**[View the Interactive Demo Report](https://vivarium-collective.github.io/viva-bioreactordesign/report.html)** — three E. coli fermentation scenarios from 2 L bench scale to 10,000 L production, with 3D reactor viewers, time-series charts, and bigraph architecture diagrams.
 
 Implements a 0D (well-mixed) bioreactor model using BiRD's physics correlations:
 - **Higbie penetration theory** for volumetric mass transfer coefficient (kLa)
@@ -14,8 +14,8 @@ Implements a 0D (well-mixed) bioreactor model using BiRD's physics correlations:
 ## Installation
 
 ```bash
-git clone https://github.com/vivarium-collective/pbg-bioreactordesign.git
-cd pbg-bioreactordesign
+git clone https://github.com/vivarium-collective/viva-bioreactordesign.git
+cd viva-bioreactordesign
 uv venv .venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 ```
@@ -25,7 +25,7 @@ uv pip install -e ".[dev]"
 ```python
 from process_bigraph import Composite, allocate_core
 from process_bigraph.emitter import RAMEmitter, gather_emitter_results
-from pbg_bioreactordesign import BiRDReactorProcess, make_reactor_document
+from viva_bioreactordesign import BiRDReactorProcess, make_reactor_document
 
 core = allocate_core()
 core.register_link('BiRDReactorProcess', BiRDReactorProcess)
@@ -117,7 +117,7 @@ Generates `demo/report.html` — a self-contained interactive report with:
 
 Three E. coli scenarios: lab-scale batch (2L), high-cell-density stirred tank (50L), industrial airlift (10,000L).
 
-Or view the hosted report: **https://vivarium-collective.github.io/pbg-bioreactordesign/report.html**
+Or view the hosted report: **https://vivarium-collective.github.io/viva-bioreactordesign/report.html**
 
 ## Tests
 

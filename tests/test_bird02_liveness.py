@@ -10,13 +10,13 @@ import pytest
 from process_bigraph import Composite, allocate_core
 from process_bigraph.emitter import RAMEmitter, gather_emitter_results
 
-from pbg_bioreactordesign.processes import (
+from viva_bioreactordesign.processes import (
     BiRDTransportProcess,
     MonodCellProcess,
     monod_kinetics,
 )
-from pbg_bioreactordesign.transport import compute_transport_state, o2_transport_rate
-from pbg_bioreactordesign.composites import make_coupled_document
+from viva_bioreactordesign.transport import compute_transport_state, o2_transport_rate
+from viva_bioreactordesign.composites import make_coupled_document
 
 TRANSPORT_CFG = {
     'reactor_type': 'bubble_column', 'volume_L': 20.0, 'diameter_m': 0.2,

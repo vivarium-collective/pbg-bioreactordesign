@@ -4,7 +4,7 @@ import math
 import pytest
 from process_bigraph import allocate_core
 
-from pbg_bioreactordesign.processes import (
+from viva_bioreactordesign.processes import (
     BiRDReactorProcess,
     water_viscosity,
     henry_constant,

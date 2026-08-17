@@ -50,11 +50,11 @@ expected_behavior:
             grammar (issue #96), hence pytest."
 baseline:
   - name: coupled-reactor-cell
-    composite: pbg_bioreactordesign.composites.coupled_reactor_cell
+    composite: viva_bioreactordesign.composites.coupled_reactor_cell
     params: {}
 variants: []
 interventions: []
 runs: []
-# NOTE: pbg_bioreactordesign.coupled_reactor_cell is the Phase-1 coupled
+# NOTE: viva_bioreactordesign.coupled_reactor_cell is the Phase-1 coupled
 # composite (built in bird-01); this study is gated on bird-02 → bird-01.
 # Named here so the spec documents intent and the study renders.

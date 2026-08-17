@@ -5,10 +5,10 @@
 # dashboard catalog can discover, display, and run the standalone reactor,
 # and so studies can name it as a `baseline:` composite.
 #
-# Lives in pbg_bioreactordesign/composites/ so BOTH discovery paths find it:
+# Lives in viva_bioreactordesign/composites/ so BOTH discovery paths find it:
 # pbg_superpowers.composite_discovery (rglob) AND the dashboard's
 # composite_lookup (which globs <pkg>/composites/ only).
-# spec_id: pbg_bioreactordesign.composites.reactor
+# spec_id: viva_bioreactordesign.composites.reactor
 
 name: reactor
 description: >
