@@ -23,7 +23,7 @@ import tempfile
 
 from process_bigraph import gather_emitter_results
 
-from pbg_bioreactordesign.composites import (
+from viva_bioreactordesign.composites import (
     _COMPOSITES_DIR,
     build_composite,
     list_composite_specs,
@@ -154,7 +154,7 @@ def main(spec_name: str | None = None, n_steps: int = 20,
     if spec_name is None:
         specs = list_composite_specs()
         if not specs:
-            raise SystemExit("No *.composite.yaml found in pbg_bioreactordesign/composites/")
+            raise SystemExit("No *.composite.yaml found in viva_bioreactordesign/composites/")
         spec_name = specs[0]
 
     print(f"Running composite '{spec_name}' for {n_steps} steps...")

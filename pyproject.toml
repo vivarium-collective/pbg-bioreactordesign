@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pbg-bioreactordesign"
+name = "viva-bioreactordesign"
 version = "0.1.0"
 description = "Process-bigraph wrapper for BioReactorDesign (BiRD) bioreactor simulation"
 requires-python = ">=3.11"
@@ -27,4 +27,4 @@ bird = ["nlr-bird"]
 pbg-superpowers = { git = "https://github.com/vivarium-collective/viva-superpowers.git", branch = "main", subdirectory = "shim" }
 
 [tool.setuptools.packages.find]
-include = ["pbg_bioreactordesign*"]
+include = ["viva_bioreactordesign*", "pbg_bioreactordesign*"]  # viva_bioreactordesign real; pbg_bioreactordesign = back-compat import shim

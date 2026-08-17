@@ -24,14 +24,14 @@ import yaml
 from process_bigraph import allocate_core
 from process_bigraph.emitter import RAMEmitter
 
-from pbg_bioreactordesign.processes import (
+from viva_bioreactordesign.processes import (
     BiRDReactorProcess,
     BiRDTransportProcess,
     MonodCellProcess,
 )
 
 # Re-export the hand-coded factories (standalone reactor + coupled reactor↔cell).
-from pbg_bioreactordesign.composites._factory import (
+from viva_bioreactordesign.composites._factory import (
     make_reactor_document,
     make_coupled_document,
 )
@@ -51,7 +51,7 @@ def register_bioreactordesign(core=None):
     core.register_link('MonodCellProcess', MonodCellProcess)
     core.register_link('ram-emitter', RAMEmitter)
     # Register Visualization Steps so composites can wire them by name.
-    from pbg_bioreactordesign.visualizations import BioreactorPlots
+    from viva_bioreactordesign.visualizations import BioreactorPlots
     core.register_link('BioreactorPlots', BioreactorPlots)
     return core
 

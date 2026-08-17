@@ -1,8 +1,8 @@
 schema_version: 2
-name: pbg-bioreactordesign
+name: viva-bioreactordesign
 created: "2026-05-29"
 plugin_version: 0.8.1
-package_path: pbg_bioreactordesign
+package_path: viva_bioreactordesign
 observables: []
 visualizations: []
 simulations: []

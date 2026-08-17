@@ -80,7 +80,7 @@ expected_behavior:
     at the configured P/V and u_g (see literature_anchors).
 baseline:
 - name: coupled-reactor-cell
-  composite: pbg_bioreactordesign.composites.coupled_reactor_cell
+  composite: viva_bioreactordesign.composites.coupled_reactor_cell
   params: {}
 variants: []
 interventions: []

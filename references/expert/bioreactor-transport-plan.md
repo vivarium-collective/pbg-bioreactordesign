@@ -139,6 +139,6 @@ parameterized to a specific vessel.
   reactor side must honor (biomass + exchange in, transport out). The
   `MonodCellProcess` built in Phase 1 is the trivial conforming engine.
 - BiRD-toolbox physics lineage (kLa / Higbie / Henry / Wilke–Chang) —
-  prior art for the transport correlations; see `pbg_bioreactordesign/`.
+  prior art for the transport correlations; see `viva_bioreactordesign/`.
 - v2ecoli `multiscale-bioprocess` investigation, study `mbp-03` — the
   downstream consumer that depends on `BiRDTransportProcess`.

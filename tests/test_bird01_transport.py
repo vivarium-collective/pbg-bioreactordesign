@@ -11,18 +11,18 @@ import pytest
 from process_bigraph import Composite, allocate_core
 from process_bigraph.emitter import RAMEmitter, gather_emitter_results
 
-from pbg_bioreactordesign.processes import (
+from viva_bioreactordesign.processes import (
     BiRDReactorProcess,
     BiRDTransportProcess,
     MonodCellProcess,
 )
-from pbg_bioreactordesign.transport import (
+from viva_bioreactordesign.transport import (
     compute_transport_state,
     o2_transport_rate,
     co2_transport_rate,
     saturation_concentration,
 )
-from pbg_bioreactordesign.composites import (
+from viva_bioreactordesign.composites import (
     make_reactor_document,
     make_coupled_document,
 )
@@ -212,8 +212,8 @@ def test_monod_cell_conforms_to_interface_contract(core):
 
     # Contract units: external_exchange_fluxes are molar specific rates
     # mmol/(gDW·h), NOT the mass-specific g_O2/(gDW·h) the Monod q_o2 carries.
-    from pbg_bioreactordesign.processes import monod_kinetics
-    from pbg_bioreactordesign.transport import SPECIES_DATA
+    from viva_bioreactordesign.processes import monod_kinetics
+    from viva_bioreactordesign.transport import SPECIES_DATA
     k = monod_kinetics(8.0, 1.0, proc.config)
     o2_molar = k['q_o2'] / SPECIES_DATA['O2']['MW'] * 1000.0
     assert fluxes['OXYGEN-MOLECULE[p]'] == pytest.approx(-o2_molar, rel=1e-12)

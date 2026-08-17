@@ -7,7 +7,7 @@ the configured power input and superficial gas velocity.
 
 import pytest
 
-from pbg_bioreactordesign.transport import (
+from viva_bioreactordesign.transport import (
     compute_transport_state,
     vant_riet_kla,
     superficial_gas_velocity,

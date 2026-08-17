@@ -154,7 +154,7 @@ def make_coupled_document(
     stores), so net d[O2]/dt = transport − consumption. The biomass store is
     written only by the cell; the transport process reads it as input.
 
-    This is the declarative equivalent of pbg_bioreactordesign.coupled_reactor_cell
+    This is the declarative equivalent of viva_bioreactordesign.coupled_reactor_cell
     (the .composite.yaml catalog spec) with adjustable parameters for the
     coupled studies (bird-02 liveness, bird-03 interval, bird-04 geometry).
 
